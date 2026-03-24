@@ -73,6 +73,25 @@ def test_saved_authorized_user_credentials_are_preferred(tmp_path, monkeypatch):
     assert transport.calls[0][1] is sentinel
 
 
+def test_saved_authorized_user_credentials_keep_their_original_scopes(tmp_path, monkeypatch):
+    config_dir = tmp_path / "cfg"
+    config_dir.mkdir()
+    (config_dir / "credentials.json").write_text(json.dumps({"type": "authorized_user"}))
+    calls = []
+
+    def _load(path, scopes=None):
+        calls.append(scopes)
+        return object()
+
+    monkeypatch.setenv("FASTGWS_CONFIG_DIR", str(config_dir))
+    monkeypatch.setattr("fastgws.auth.load_authorized_user", _load)
+    monkeypatch.setattr("fastgws.auth.google_auth_default", lambda scopes=None: (_ for _ in ()).throw(AssertionError("ADC should not be used")))
+    transport = FakeTransport({"files": []})
+
+    FastGWS(credentials=None, transport=transport).drive.files.list()
+    assert calls == [None]
+
+
 def test_auth_login_requires_client_secret(tmp_path, monkeypatch):
     monkeypatch.setenv("FASTGWS_CONFIG_DIR", str(tmp_path / "cfg"))
     with pytest.raises(ValidationError): cli.main(["auth", "login"])

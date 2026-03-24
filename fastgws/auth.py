@@ -27,7 +27,7 @@ def client_secret_path(): return Path(os.getenv("FASTGWS_CLIENT_SECRET_FILE", co
 def local_credentials(scopes=None):
     path = credentials_path()
     if not path.exists(): return None
-    return load_authorized_user(path, scopes=scopes)
+    return load_authorized_user(path)
 
 
 def default_credentials(scopes=None):
