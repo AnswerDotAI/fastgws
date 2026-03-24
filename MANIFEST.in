@@ -1,3 +1,5 @@
 include README.md
 include LICENSE
 include CHANGELOG.md
+include services.toml
+recursive-include fastgws/generated *.py *.pyi

@@ -1,0 +1,29 @@
+[[service]]
+alias = "drive"
+api_name = "drive"
+version = "v3"
+description = "Manage files, folders, and shared drives"
+
+[[service]]
+alias = "gmail"
+api_name = "gmail"
+version = "v1"
+description = "Send, read, and manage email"
+
+[[service]]
+alias = "sheets"
+api_name = "sheets"
+version = "v4"
+description = "Read and write spreadsheets"
+
+[[service]]
+alias = "keep"
+api_name = "keep"
+version = "v1"
+description = "Manage Google Keep notes"
+
+[[service]]
+alias = "admin_reports"
+api_name = "admin"
+version = "reports_v1"
+description = "Audit logs and usage reports"

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fastgws"
 dynamic = ["version"]
-description = "A Python package"
+description = "A discovery-driven Google Workspace client"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
@@ -15,17 +15,28 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
 ]
 
-dependencies = []
+dependencies = [
+  "google-auth",
+  "google-auth-oauthlib",
+  "requests",
+]
 
 [project.optional-dependencies]
 dev = [
   "fastship",
   "build",
+  "pytest",
   "twine",
 ]
+
+[project.scripts]
+fastgws = "fastgws.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/AnswerDotAI/fastgws"
 
 [tool.setuptools.dynamic]
 version = { attr = "fastgws.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

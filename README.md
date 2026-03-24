@@ -1,11 +1,14 @@
 # fastgws
 
-A modern Python package scaffolded by **fastship**.
+A discovery-driven Google Workspace client for notebooks, scripts, and a thin CLI.
 
 ## Development
 
 ```bash
 pip install -e .[dev]
+python -m fastgws.build all
+pytest
+chkstyle fastgws tests
 ```
 
 ## Versioning
