@@ -11,8 +11,10 @@ d = { 'settings': { 'branch': 'main',
                               'fastgws.core.GWSApi._get_doc': ('core.html#gwsapi._get_doc', 'fastgws/core.py'),
                               'fastgws.core.GWSObject': ('core.html#gwsobject', 'fastgws/core.py'),
                               'fastgws.core.GWSObject.__repr__': ('core.html#gwsobject.__repr__', 'fastgws/core.py'),
+                              'fastgws.core.GWSOpFunc': ('core.html#gwsopfunc', 'fastgws/core.py'),
                               'fastgws.core.GWSTransport': ('core.html#gwstransport', 'fastgws/core.py'),
                               'fastgws.core.GWSTransport.__init__': ('core.html#gwstransport.__init__', 'fastgws/core.py'),
                               'fastgws.core.GWSTransport.request': ('core.html#gwstransport.request', 'fastgws/core.py'),
                               'fastgws.core.g2obj': ('core.html#g2obj', 'fastgws/core.py'),
-                              'fastgws.core.gclasses': ('core.html#gclasses', 'fastgws/core.py')}}}
+                              'fastgws.core.gclasses': ('core.html#gclasses', 'fastgws/core.py')},
+            'fastgws.skill': {}}}

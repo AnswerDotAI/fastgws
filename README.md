@@ -73,7 +73,7 @@ Responses are converted into lightweight Python objects. Known Google
 resource kinds get more specific classes such as `FileList`, `Events`,
 or `Event`; when a service does not provide enough schema information,
 fastgws falls back to the base
-[`GWSObject`](https://ncoop57.github.io/fastgws/core.html#gwsobject).
+[`GWSObject`](https://answerdotai.github.io/fastgws/core.html#gwsobject).
 Either way, fields are available as attributes as well as dictionary
 keys.
 
@@ -90,7 +90,7 @@ doc
 <div class="prose" markdown="1">
 
 ``` python
-GWSObject(title='fastgws test doc', documentId='1ohlMW4OttiYNExpTR4SfVdDpGwW7qvyJAYY-YcxaYW0', body=1, documentStyle=11, namedStyles=1, tabs=1)
+GWSObject(title='fastgws test doc', documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', body=1, documentStyle=11, namedStyles=1, tabs=1)
 ```
 
 </div>
@@ -104,7 +104,7 @@ await docs.documents.batch_update(document_id=doc.documentId,
 <div class="prose" markdown="1">
 
 ``` python
-GWSObject(documentId='1ohlMW4OttiYNExpTR4SfVdDpGwW7qvyJAYY-YcxaYW0', replies=1, writeControl=1)
+GWSObject(documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', replies=1, writeControl=1)
 ```
 
 </div>
@@ -130,8 +130,8 @@ fs = await drive.files.list(q="name contains 'fastgws' and trashed=false", page_
 fs, fs.files[0]
 ```
 
-    (FileList(kind='drive#fileList', files=2),
-     File(id='1ohlMW4OttiYNExpTR4SfVdDpGwW7qvyJAYY-YcxaYW0', name='fastgws test doc', mimeType='application/vnd.google-apps.document', kind='drive#file'))
+    (FileList(kind='drive#fileList', files=3),
+     File(id='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', name='fastgws test doc', mimeType='application/vnd.google-apps.document', kind='drive#file'))
 
 Use Gmail to search messages with the Gmail query syntax. The result is
 still a Python object, so you can inspect message ids, thread ids, and
@@ -165,7 +165,7 @@ event
 <div class="prose" markdown="1">
 
 ``` python
-Event(id='t997kgs5meii3h0e2ft6g66omo', summary='fastgws test event', kind='calendar#event', creator=2, organizer=2, start=2, end=2, reminders=1)
+Event(id='u99k6q861u35h6mrmejdrgc0gg', summary='fastgws test event', kind='calendar#event', creator=2, organizer=2, start=2, end=2, reminders=1)
 ```
 
 </div>
@@ -177,7 +177,7 @@ events, events['items'][0]
 ```
 
     (Events(summary='nc@answer.ai', kind='calendar#events', defaultReminders=1, items=1),
-     Event(id='t997kgs5meii3h0e2ft6g66omo', summary='fastgws test event', kind='calendar#event', creator=2, organizer=2, start=2, end=2, reminders=1))
+     Event(id='u99k6q861u35h6mrmejdrgc0gg', summary='fastgws test event', kind='calendar#event', creator=2, organizer=2, start=2, end=2, reminders=1))
 
 ``` python
 await calendar.events.delete(calendar_id='primary', event_id=event.id)
@@ -211,3 +211,27 @@ discovery index. If Google publishes a discovery document for a service,
 you can usually import that service by name, for example
 `from fastgws import Sheets`, then use it with the same `creds`,
 `token`, or `api_key` arguments shown above.
+
+## PySkill support
+
+`fastgws` includes a PySkill for agents working inside solveit. Load
+`fastgws.skill` when a task needs access to Google Workspace or Google
+APIs through the base
+[`GWSApi`](https://answerdotai.github.io/fastgws/core.html#gwsapi)
+client.
+
+The skill exposes
+[`GWSApi`](https://answerdotai.github.io/fastgws/core.html#gwsapi),
+[`GWSObject`](https://answerdotai.github.io/fastgws/core.html#gwsobject),
+`oauth_creds`, and `svc_acct_creds`, and allows generated Google API
+operations through
+[`GWSOpFunc`](https://answerdotai.github.io/fastgws/core.html#gwsopfunc).
+Agents should normally load OAuth credentials with `interactive=False`,
+which means they can only use scopes the user has already authorized
+manually.
+
+``` python
+creds = oauth_creds(scopes=['https://www.googleapis.com/auth/gmail.readonly'], interactive=False)
+gmail = GWSApi('gmail', creds=creds)
+msgs = await gmail.users.messages.list(user_id='me', max_results=10)
+```
