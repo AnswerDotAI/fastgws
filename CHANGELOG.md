@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.1
+
+### New Features
+
+- Add PySkill support for Google Workspace APIs ([#9](https://github.com/AnswerDotAI/fastgws/pull/9)), thanks to [@ncoop57](https://github.com/ncoop57)
+
+
 ## 0.2.0
 
 ### New Features
