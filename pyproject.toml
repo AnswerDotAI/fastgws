@@ -31,3 +31,8 @@ version = {attr = "fastgws.__version__"}
 include = ["fastgws"]
 
 [tool.nbdev]
+allowed_metadata_keys = ['solveit']
+allowed_cell_metadata_keys = ['solveit_ai']
+
+[project.entry-points.pyskills]
+"fastgws.skill" = "fastgws.skill"
