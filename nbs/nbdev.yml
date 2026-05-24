@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "fastgws"
+  site-url: "https://ncoop57.github.io/fastgws"
+  description: ""
+  repo-branch: main
+  repo-url: "https://github.com/ncoop57/fastgws"
