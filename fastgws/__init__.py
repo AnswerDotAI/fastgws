@@ -4,7 +4,7 @@ from functools import cache
 
 import httpx
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 @cache
 def apis():
