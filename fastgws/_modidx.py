@@ -2,8 +2,8 @@
 
 d = { 'settings': { 'branch': 'main',
                 'doc_baseurl': '/fastgws',
-                'doc_host': 'https://ncoop57.github.io',
-                'git_url': 'https://github.com/ncoop57/fastgws',
+                'doc_host': 'https://answerdotai.github.io',
+                'git_url': 'https://github.com/answerdotai/fastgws',
                 'lib_path': 'fastgws'},
   'syms': { 'fastgws.auth': {},
             'fastgws.core': { 'fastgws.core.GWSApi': ('core.html#gwsapi', 'fastgws/core.py'),
