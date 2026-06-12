@@ -15,7 +15,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = ['fastcore', 'fastspec', 'httpx']
+dependencies = ['fastcore', 'fastspec', 'google-api-python-client>=2.120.0', 'google-auth>=2.30.0',
+                'google-auth-oauthlib>=1.2.0', 'google-auth-httplib2>=0.2.0', 'httpx2']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/fastgws"

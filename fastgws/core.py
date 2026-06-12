@@ -40,9 +40,13 @@ def g2obj(x, gcls):
 
 # %% ../nbs/00_core.ipynb #e6dae508
 class GWSTransport(AsyncTransport):
-    def __init__(self, *args, gcls=None, **kwargs):
+    def __init__(self, *args, gcls=None, creds=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.gcls = gcls or {}
+        self.gcls,self.creds = gcls or {},creds
+
+    def _request_headers(self, headers=None, *, files=None):
+        if self.creds: self.base_headers |= auth_headers(self.creds)
+        return super()._request_headers(headers, files=files)
 
     async def request(self, *args, raw=False, **kwargs):
         res = await super().request(*args, raw=raw, **kwargs)
@@ -67,7 +71,7 @@ class GWSApi:
         if api_key is None and not (creds or token): api_key = os.getenv('GOOGLE_API_KEY', os.getenv('GWS_API_KEY'))
         if api_key: hdrs = {'X-Goog-Api-Key': api_key, **hdrs}
 
-        self.transport = GWSTransport(timeout=timeout, base_headers=hdrs, gcls=self.gcls)
+        self.transport = GWSTransport(timeout=timeout, base_headers=hdrs, gcls=self.gcls, creds=creds)
         self.ops = [GWSOpFunc(o, self.transport, self.spec.base_url, noop) for o in self.spec.ops]
         self.func_dict = {f"{o.path}:{o.verb.upper()}": o for o in self.ops}
         self.groups = _build_groups(self.ops)
