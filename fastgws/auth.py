@@ -8,29 +8,16 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-import os, sys, webbrowser, json
+import json, os, sys
 
 
-__all__ = ['gws_config_dir', 'browser_available', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'svc_acct_creds', 'token', 'auth_headers']
+__all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'svc_acct_creds', 'token', 'auth_headers']
 
 def gws_config_dir():
     "Default fastgws config directory."
     p = xdg_config_home()/'fastgws'
     p.mkdir(parents=True, exist_ok=True)
     return p
-
-def browser_available():
-    "Check if a browser can be opened in current environment."
-    if os.environ.get('NO_BROWSER'): return False
-    if os.environ.get('SSH_CONNECTION') and not os.environ.get('DISPLAY'): return False
-    if os.path.exists('/.dockerenv'): return False
-    if os.environ.get('container'): return False
-    if sys.platform.startswith('linux') and not os.environ.get('DISPLAY') and not os.environ.get('WAYLAND_DISPLAY'): return False
-    try:
-        webbrowser.get()
-        return True
-    except webbrowser.Error:
-        return False
 
 def token_has_scopes(token_path, scopes):
     "Check whether an authorized-user token file includes all requested scopes."
@@ -39,11 +26,8 @@ def token_has_scopes(token_path, scopes):
     saved = set(json.loads(token_path.read_text()).get('scopes', []))
     return set(scopes).issubset(saved)
 
-def listen_for_code(flow, port=8000):
+def listen_for_code(port):
     "Run a one-shot local server on `port` to catch the OAuth redirect, then return fetched creds"
-    auth_url,_ = flow.authorization_url(access_type='offline', prompt='consent')
-    if browser_available(): webbrowser.open(auth_url)
-    else: print(f'Authorize here: {auth_url}')
     code = None
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -53,10 +37,10 @@ def listen_for_code(flow, port=8000):
             self.wfile.write(b'Auth complete, you can close this tab.')
         def log_message(self, *a): pass
     with HTTPServer(('', port), Handler) as srv: srv.handle_request()
-    flow.fetch_token(code=code)
-    return flow.credentials
+    return code
 
-def oauth_creds(creds_path=None, token_path=None, scopes=None, interactive=True, redirect_uri=None, listen=False, port=0):
+async def oauth_creds(creds_path=None, token_path=None, scopes=None,
+                      interactive=True, redirect_uri=None, listen=False, port=0, open_url=print):
     "OAuth creds from config-dir `credentials.json`/`token.json` for `scopes`."
     if scopes is None: raise ValueError('`scopes` is required')
     cfg = gws_config_dir()
@@ -73,25 +57,15 @@ def oauth_creds(creds_path=None, token_path=None, scopes=None, interactive=True,
         return creds
 
     if not interactive: raise ValueError('Missing or invalid token, and `interactive=False`')
+        
+    flow = Flow.from_client_secrets_file(str(creds_path), scopes=scopes)
+    flow.redirect_uri = ifnone(redirect_uri, 'http://localhost/')
+    auth_url, _ = flow.authorization_url(access_type='offline', prompt='consent')
+    await maybe_await(open_url(auth_url))
 
-    if listen:
-        flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), scopes=scopes)
-        flow.redirect_uri = ifnone(redirect_uri, 'http://localhost/')
-        creds = listen_for_code(flow, port)
-    else:
-        flow = Flow.from_client_secrets_file(str(creds_path), scopes=scopes)
-        flow.redirect_uri = ifnone(redirect_uri, 'http://localhost/')
-        auth_url, _ = flow.authorization_url(access_type='offline', prompt='consent')
-
-        if in_notebook():
-            from IPython.display import display, HTML
-            handle = display(HTML(f'<a href="{auth_url}" target="_blank">Click to authorize</a>'), display_id=True)
-        else: print(f'Authorize here: {auth_url}')
-
-        code = input("Paste the code: ")
-        flow.fetch_token(code=code)
-        creds = flow.credentials
-        if in_notebook(): handle.update(HTML('<b>Auth complete</b>'))
+    code = listen_for_code(port) if listen else input("Paste the code: ")
+    flow.fetch_token(code=code)
+    creds = flow.credentials
 
     token_path.write_text(creds.to_json())
     return creds
