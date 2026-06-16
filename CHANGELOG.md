@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.2
+
+### New Features
+
+- Add support for custom redirs and refreshing tokens
+
+
 ## 0.2.1
 
 ### New Features
