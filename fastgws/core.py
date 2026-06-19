@@ -13,8 +13,10 @@ from fastcore.utils import *
 from .auth import *
 from fastspec.spec import SpecParser
 from fastspec.oapi import AsyncTransport, OpFunc, _build_groups
+from googleapiclient.discovery import build
+from googleapiclient.http import BatchHttpRequest
 
-import httpx, os
+import asyncio, httpx, os, random
 
 # %% ../nbs/00_core.ipynb #bcf1c22a
 class GWSObject(AttrDict):
@@ -39,6 +41,11 @@ def g2obj(x, gcls):
     return cls({k:g2obj(v, gcls) for k,v in x.items()})
 
 # %% ../nbs/00_core.ipynb #e6dae508
+@patch
+def _retry_after(self:httpx.HTTPStatusError):
+    v = self.response.headers.get('retry-after')
+    return float(v) if v and v.replace('.','',1).isdigit() else None
+
 class GWSTransport(AsyncTransport):
     def __init__(self, *args, gcls=None, creds=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,9 +55,15 @@ class GWSTransport(AsyncTransport):
         if self.creds: self.base_headers |= auth_headers(self.creds)
         return super()._request_headers(headers, files=files)
 
-    async def request(self, *args, raw=False, **kwargs):
-        res = await super().request(*args, raw=raw, **kwargs)
-        return res if raw else g2obj(res, self.gcls)
+    async def request(self, *args, raw=False, n_retries=5, base=1.0, **kwargs):
+        for i in range(n_retries):
+            try:
+                res = await super().request(*args, raw=raw, **kwargs)
+                return res if raw else g2obj(res, self.gcls)
+            except httpx.HTTPStatusError as e:
+                if i==n_retries-1 or not e.api_error().retryable: raise
+                wait = e._retry_after() or base*2**i + random.uniform(0, base)
+                await asyncio.sleep(wait)
 
 class GWSOpFunc(OpFunc): pass
 
@@ -63,6 +76,7 @@ class GWSApi:
         if service is None: raise ValueError('`service` is required')
         self.service,self.version = service,version
         self.doc = doc or self._get_doc(service, version)
+        self._gservice = build(service, self.version, credentials=creds, cache_discovery=False)
         self.spec = SpecParser.from_discovery(self.doc)
         self.gcls = gclasses(self.doc)
 
@@ -86,3 +100,16 @@ class GWSApi:
             url = api['discoveryRestUrl']
             self.version = api['version']
         return httpx.get(url).json()
+    
+    def batch_get(self, requests, chunk_sz=50):
+        "Batch fetch `requests` (list of (id, HttpRequest) tuples) via googleapiclient batch protocol"
+        results = {}
+        def _cb(rid, resp, exc):
+            if exc: raise exc
+            results[rid] = resp
+        uri = f'https://www.googleapis.com/batch/{self.service}/{self.version}'
+        for chunk in chunked(requests, chunk_sz):
+            batch = BatchHttpRequest(callback=_cb, batch_uri=uri)
+            for rid, r in chunk: batch.add(r, request_id=rid)
+            batch.execute()
+        return results
