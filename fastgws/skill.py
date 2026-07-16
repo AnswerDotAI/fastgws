@@ -13,6 +13,8 @@ creds = oauth_creds(scopes=['https://www.googleapis.com/auth/gmail.readonly'],
 
 After the user completes the OAuth flow, load the credentials with `interactive=False` before making API calls.
 
+Access tokens refresh automatically during API calls (including after a 401), and the fresh token is saved back to the token file, so there is no need to re-run `oauth_creds` when a token expires.
+
 To sign out, `await logout()` revokes the saved grant at Google and deletes the stored token (a no-op if none is saved).
 
 Service accounts are available through `svc_acct_creds` for Google APIs that support them. Use them when the user has provided a local service account JSON file and the target API can be accessed without a browser-based user consent flow. For Workspace data owned by a user, service accounts usually need domain-wide delegation and a `subject` user; otherwise OAuth credentials are the safer default.

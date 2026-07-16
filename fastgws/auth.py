@@ -1,5 +1,6 @@
 from fastcore.utils import *
 from fastcore.xdg import xdg_config_home
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
@@ -8,10 +9,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-import json, os, sys, httpx
+import asyncio, json, os, sys, httpx
 
 
-__all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'logout', 'svc_acct_creds', 'token', 'auth_headers']
+__all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'refresh_creds', 'logout', 'svc_acct_creds', 'token', 'auth_headers']
 
 def gws_config_dir():
     "Default fastgws config directory."
@@ -49,12 +50,9 @@ async def oauth_creds(creds_path=None, token_path=None, scopes=None,
 
     if token_path.exists() and not token_has_scopes(token_path, scopes): token_path.unlink()
     creds = Credentials.from_authorized_user_file(str(token_path), scopes) if token_path.exists() else None
+    if creds: creds.token_path = token_path
     if creds and creds.valid: return creds
-
-    if creds and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        token_path.write_text(creds.to_json())
-        return creds
+    if creds and creds.expired and creds.refresh_token: return await refresh_creds(creds)
 
     if not interactive: raise ValueError('Missing or invalid token, and `interactive=False`')
         
@@ -66,8 +64,17 @@ async def oauth_creds(creds_path=None, token_path=None, scopes=None,
     code = listen_for_code(port) if listen else input("Paste the code: ")
     flow.fetch_token(code=code)
     creds = flow.credentials
+    creds.token_path = token_path
 
     token_path.write_text(creds.to_json())
+    return creds
+
+async def refresh_creds(creds, token_path=None):
+    "Refresh `creds` without blocking the event loop, saving to `token_path` (default: the file they were loaded from)."
+    try: await asyncio.to_thread(creds.refresh, Request())
+    except RefreshError as e: raise ValueError('Token refresh failed; re-run `oauth_creds` to re-authorize') from e
+    token_path = ifnone(token_path, getattr(creds, 'token_path', None))
+    if token_path: Path(token_path).write_text(creds.to_json())
     return creds
 
 async def logout(token_path=None):
