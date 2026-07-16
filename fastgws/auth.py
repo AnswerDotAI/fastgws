@@ -8,10 +8,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-import json, os, sys
+import json, os, sys, httpx
 
 
-__all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'svc_acct_creds', 'token', 'auth_headers']
+__all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'logout', 'svc_acct_creds', 'token', 'auth_headers']
 
 def gws_config_dir():
     "Default fastgws config directory."
@@ -69,6 +69,18 @@ async def oauth_creds(creds_path=None, token_path=None, scopes=None,
 
     token_path.write_text(creds.to_json())
     return creds
+
+async def logout(token_path=None):
+    "Revoke the saved OAuth grant at Google and remove `token_path`; no-op if no token is saved."
+    token_path = Path(ifnone(token_path, gws_config_dir()/'token.json'))
+    if not token_path.exists(): return
+    tok = json.loads(token_path.read_text())
+    tok = tok.get('refresh_token') or tok.get('token')
+    if tok:
+        async with httpx.AsyncClient() as c:
+            r = await c.post('https://oauth2.googleapis.com/revoke', data={'token': tok})
+            if r.status_code != 400: r.raise_for_status()
+    token_path.unlink()
 
 def svc_acct_creds(sa_path=None, scopes=None, subject=None):
     "Service account creds from config-dir `service_account.json`, optionally delegated to `subject`."
