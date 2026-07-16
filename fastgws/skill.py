@@ -13,6 +13,8 @@ creds = oauth_creds(scopes=['https://www.googleapis.com/auth/gmail.readonly'],
 
 After the user completes the OAuth flow, load the credentials with `interactive=False` before making API calls.
 
+To sign out, `await logout()` revokes the saved grant at Google and deletes the stored token (a no-op if none is saved).
+
 Service accounts are available through `svc_acct_creds` for Google APIs that support them. Use them when the user has provided a local service account JSON file and the target API can be accessed without a browser-based user consent flow. For Workspace data owned by a user, service accounts usually need domain-wide delegation and a `subject` user; otherwise OAuth credentials are the safer default.
 
 ```python
@@ -96,10 +98,10 @@ Generated clients expose whatever the Google discovery document exposes. The pre
 """
 
 from pyskills.core import allow
-from fastgws.auth import oauth_creds, svc_acct_creds
+from fastgws.auth import oauth_creds, logout, svc_acct_creds
 from fastgws.core import GWSApi, GWSObject, GWSOpFunc
 
-__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'svc_acct_creds']
+__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'logout', 'svc_acct_creds']
 
 allow(GWSApi.__init__, oauth_creds, svc_acct_creds, {GWSOpFunc: ['__call__']})
 
