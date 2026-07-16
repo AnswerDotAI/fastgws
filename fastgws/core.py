@@ -56,14 +56,19 @@ class GWSTransport(AsyncTransport):
         return super()._request_headers(headers, files=files)
 
     async def request(self, *args, raw=False, n_retries=5, base=1.0, **kwargs):
+        refreshed = False
         for i in range(n_retries):
             try:
+                if self.creds and not self.creds.valid: await refresh_creds(self.creds)
                 res = await super().request(*args, raw=raw, **kwargs)
                 return res if raw else g2obj(res, self.gcls)
             except httpx.HTTPStatusError as e:
-                if i==n_retries-1 or not e.api_error().retryable: raise
-                wait = e._retry_after() or base*2**i + random.uniform(0, base)
-                await asyncio.sleep(wait)
+                do_refresh = e.response.status_code==401 and self.creds and not refreshed
+                if i==n_retries-1 or not (do_refresh or e.api_error().retryable): raise
+                if do_refresh:
+                    refreshed = True
+                    await refresh_creds(self.creds)
+                else:          await asyncio.sleep(e._retry_after() or base*2**i + random.uniform(0, base))
 
 class GWSOpFunc(OpFunc): pass
 
