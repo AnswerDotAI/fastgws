@@ -8,11 +8,12 @@ from google_auth_oauthlib.flow import InstalledAppFlow, Flow
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
+from datetime import datetime, timezone
 
 import asyncio, json, os, sys, httpx
 
 
-__all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'refresh_creds', 'logout', 'svc_acct_creds', 'token', 'auth_headers']
+__all__ = ['gws_config_dir', 'in_solveit', 'SolveitCredentials', 'solveit_creds', 'token_has_scopes', 'listen_for_code', 'oauth_creds', 'refresh_creds', 'logout', 'svc_acct_creds', 'token', 'auth_headers']
 
 def gws_config_dir():
     "Default fastgws config directory."
@@ -42,9 +43,12 @@ def listen_for_code(port):
 
 async def oauth_creds(creds_path=None, token_path=None, scopes=None,
                       interactive=True, redirect_uri=None, listen=False, port=0, open_url=print):
-    "OAuth creds from config-dir `credentials.json`/`token.json` for `scopes`."
+    "OAuth creds from config-dir `credentials.json`/`token.json` for `scopes`; in a SolveIt instance with no local files, uses `solveit_creds`."
     if scopes is None: raise ValueError('`scopes` is required')
     cfg = gws_config_dir()
+    if creds_path is None and token_path is None and in_solveit() \
+       and not (cfg/'credentials.json').exists() and not (cfg/'token.json').exists():
+        return solveit_creds(scopes)
     creds_path = Path(ifnone(creds_path, cfg/'credentials.json'))
     token_path = Path(ifnone(token_path, cfg/'token.json'))
 
@@ -75,6 +79,37 @@ async def refresh_creds(creds, token_path=None):
     except RefreshError as e: raise ValueError('Token refresh failed; re-run `oauth_creds` to re-authorize') from e
     token_path = ifnone(token_path, getattr(creds, 'token_path', None))
     if token_path: Path(token_path).write_text(creds.to_json())
+    return creds
+
+def in_solveit():
+    "Is this process inside a SolveIt instance that can reach the solve-lp token broker?"
+    return bool(os.environ.get('AAI_USER_KEY') and os.environ.get('SOLVELP_URL'))
+
+class SolveitCredentials(Credentials):
+    "Credentials minted by the solve-lp token broker; no local client secret or refresh token."
+    def __init__(self, scopes=None):
+        super().__init__(token=None, scopes=scopes)
+        self.email = None
+
+    def refresh(self, request):
+        r = httpx.post(f"{os.environ['SOLVELP_URL']}/gmail_token",
+                       headers={'Authorization': os.environ['AAI_USER_KEY']})
+        if r.status_code == 404:
+            url = r.json().get('connect_url', 'your solve-lp dashboard')
+            raise ValueError(f'No Google account connected; visit {url} to connect Gmail')
+        r.raise_for_status()
+        d = r.json()
+        self.token,self.email = d['access_token'],d.get('email')
+        exp = datetime.fromisoformat(d['expiry'])
+        self.expiry = exp.astimezone(timezone.utc).replace(tzinfo=None) if exp.tzinfo else exp
+        missing = set(self.scopes or []) - set(d.get('scopes', []))
+        if missing: raise ValueError(f'Connected account lacks scopes {sorted(missing)}; reconnect Gmail from your solve-lp dashboard')
+
+def solveit_creds(scopes=None):
+    "Broker-backed creds for code in a SolveIt instance; fails fast if no account is connected or scopes are missing."
+    if not in_solveit(): raise ValueError('Not in a SolveIt instance (AAI_USER_KEY/SOLVELP_URL not set)')
+    creds = SolveitCredentials(scopes=scopes)
+    creds.refresh(None)
     return creds
 
 async def logout(token_path=None):
