@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.5
+
+### New Features
+
+- Auto-refresh OAuth tokens non-blockingly during API calls ([#11](https://github.com/AnswerDotAI/fastgws/pull/11)), thanks to [@ncoop57](https://github.com/ncoop57)
+
+
 ## 0.2.4
 
 ### New Features
