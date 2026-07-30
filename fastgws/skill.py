@@ -2,16 +2,17 @@
 
 # Authentication
 
-Use `oauth_creds` to load Google OAuth credentials for the scopes needed by the task. Agents should normally call it with `interactive=False`, which means only previously authorized tokens can be used. If a new scope is needed, the user should run the interactive OAuth step manually in a code cell, then the agent can load the saved token afterward.
+Use `oauth_creds` to load Google OAuth credentials for the scopes needed by the task. Agents should normally call it with `interactive=False`, which means only previously authorized tokens can be used.
 
-If `interactive=False` fails with a missing or invalid token error, explain that the requested scope has not been authorized yet. Ask the user to run the same call manually without `interactive=False`, for example:
+If `interactive=False` fails with a missing or invalid token error, the requested scopes have not been authorized yet. Authorize them with the two-step flow: `auth_url` returns an authorization link; show it to the user and ask them to visit it, approve access, and paste the code it displays back into the chat. Then pass whatever they paste (a bare code or the full redirect URL) to `finish_auth`, which exchanges it, saves the token, and returns the credentials. The code is single-use and PKCE-bound to this kernel's flow state, so relaying it through the chat is safe.
 
 ```python
-creds = oauth_creds(scopes=['https://www.googleapis.com/auth/gmail.readonly'],
-                    redirect_uri='https://oauth.appapis.org/redirect')
+url = auth_url(scopes=['https://www.googleapis.com/auth/gmail.readonly'])
+# show `url` to the user; when they reply with the code:
+creds = finish_auth(code)
 ```
 
-After the user completes the OAuth flow, load the credentials with `interactive=False` before making API calls.
+The link redirects to the first entry of `redirect_uris` in `credentials.json` unless `redirect_uri=` is passed; edit that file to control the default. A hosted code-display page such as `https://oauth.appapis.org/redirect` is the usual choice, since the user can copy the code straight off the page.
 
 Access tokens refresh automatically during API calls (including after a 401), and the fresh token is saved back to the token file, so there is no need to re-run `oauth_creds` when a token expires.
 
@@ -90,7 +91,7 @@ events = await calendar.events.list(calendar_id='primary', single_events=True, o
 
 # Gotchas
 
-`oauth_creds(..., interactive=True)` may display an authorization link but fail to collect the pasted code inside agent tool calls. Use `interactive=False` from the agent. If new scopes are needed, ask the user to run the interactive OAuth call manually in a code cell.
+`oauth_creds(..., interactive=True)` blocks on `input()`, which agent tool calls cannot answer. From an agent, use `interactive=False` for saved tokens, and the `auth_url`/`finish_auth` flow to authorize new scopes.
 
 Google APIs use many different parameter names. Inspect the specific operation with `doc(...)` before guessing. fastgws converts names to Python style, so `userId` becomes `user_id`, `maxResults` becomes `max_results`, and so on.
 
@@ -100,10 +101,10 @@ Generated clients expose whatever the Google discovery document exposes. The pre
 """
 
 from pyskills.core import allow
-from fastgws.auth import oauth_creds, logout, svc_acct_creds
+from fastgws.auth import oauth_creds, auth_url, finish_auth, logout, svc_acct_creds
 from fastgws.core import GWSApi, GWSObject, GWSOpFunc
 
-__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'logout', 'svc_acct_creds']
+__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'auth_url', 'finish_auth', 'logout', 'svc_acct_creds']
 
-allow(GWSApi.__init__, oauth_creds, svc_acct_creds, {GWSOpFunc: ['__call__']})
+allow(GWSApi.__init__, oauth_creds, auth_url, finish_auth, svc_acct_creds, {GWSOpFunc: ['__call__']})
 
