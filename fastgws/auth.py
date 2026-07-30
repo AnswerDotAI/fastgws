@@ -4,12 +4,12 @@ from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google.oauth2 import service_account
-from google_auth_oauthlib.flow import InstalledAppFlow, Flow
+from google_auth_oauthlib.flow import Flow
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
-import asyncio, json, os, sys, httpx
+import asyncio, json, httpx
 
 
 __all__ = ['gws_config_dir', 'token_has_scopes', 'listen_for_code', 'auth_url', 'finish_auth', 'oauth_creds', 'refresh_creds', 'logout', 'svc_acct_creds', 'token', 'auth_headers']
@@ -34,7 +34,8 @@ def listen_for_code(port):
         def do_GET(self):
             nonlocal code
             code = parse_qs(urlparse(self.path).query).get('code', [None])[0]
-            self.send_response(200); self.end_headers()
+            self.send_response(200)
+            self.end_headers()
             self.wfile.write(b'Auth complete, you can close this tab.')
         def log_message(self, *a): pass
     with HTTPServer(('', port), Handler) as srv: srv.handle_request()
@@ -42,11 +43,13 @@ def listen_for_code(port):
 
 _flow = None
 
-def auth_url(creds_path=None, scopes=None, redirect_uri=None):
+def auth_url(creds_path=None, scopes=None, redirect_uri=None, token_path=None):
     "Start an interactive OAuth flow, returning the URL for the user to visit; complete with `finish_auth`."
     global _flow
     if scopes is None: raise ValueError('`scopes` is required')
     creds_path = Path(ifnone(creds_path, gws_config_dir()/'credentials.json'))
+    token_path = Path(ifnone(token_path, gws_config_dir()/'token.json'))
+    if token_path.exists(): scopes = sorted(set(scopes) | set(json.loads(token_path.read_text()).get('scopes', [])))
     _flow = Flow.from_client_secrets_file(str(creds_path), scopes=scopes)
     _flow.redirect_uri = redirect_uri or first(_flow.client_config.get('redirect_uris', ()))
     if not _flow.redirect_uri: raise ValueError('No `redirect_uri` given, and no `redirect_uris` in credentials.json')
@@ -65,22 +68,21 @@ def finish_auth(code, token_path=None):
     return creds
 
 async def oauth_creds(creds_path=None, token_path=None, scopes=None,
-                      interactive=True, redirect_uri=None, listen=False, port=0, open_url=print):
+    interactive=True, redirect_uri=None, listen=False, port=0, open_url=print):
     "OAuth creds from config-dir `credentials.json`/`token.json` for `scopes`."
     if scopes is None: raise ValueError('`scopes` is required')
     cfg = gws_config_dir()
     creds_path = Path(ifnone(creds_path, cfg/'credentials.json'))
     token_path = Path(ifnone(token_path, cfg/'token.json'))
 
-    if token_path.exists() and not token_has_scopes(token_path, scopes): token_path.unlink()
-    creds = Credentials.from_authorized_user_file(str(token_path), scopes) if token_path.exists() else None
+    creds = Credentials.from_authorized_user_file(str(token_path)) if token_has_scopes(token_path, scopes) else None
     if creds: creds.token_path = token_path
     if creds and creds.valid: return creds
     if creds and creds.expired and creds.refresh_token: return await refresh_creds(creds)
 
     if not interactive: raise ValueError('Missing or invalid token, and `interactive=False`')
 
-    url = auth_url(creds_path, scopes=scopes, redirect_uri=redirect_uri)
+    url = auth_url(creds_path, scopes=scopes, redirect_uri=redirect_uri, token_path=token_path)
     await maybe_await(open_url(url))
     code = listen_for_code(port) if listen else input("Paste the code: ")
     return finish_auth(code, token_path)

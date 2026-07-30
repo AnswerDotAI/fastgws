@@ -4,7 +4,7 @@
 
 Use `oauth_creds` to load Google OAuth credentials for the scopes needed by the task. Agents should normally call it with `interactive=False`, which means only previously authorized tokens can be used.
 
-If `interactive=False` fails with a missing or invalid token error, the requested scopes have not been authorized yet. Authorize them with the two-step flow: `auth_url` returns an authorization link; show it to the user and ask them to visit it, approve access, and paste the code it displays back into the chat. Then pass whatever they paste (a bare code or the full redirect URL) to `finish_auth`, which exchanges it, saves the token, and returns the credentials. The code is single-use and PKCE-bound to this kernel's flow state, so relaying it through the chat is safe.
+If `interactive=False` fails with a missing or invalid token error, the requested scopes have not been authorized yet. Authorize them with the two-step flow: `auth_url` returns an authorization link; show it to the user and ask them to visit it, approve access, and paste the code it displays back into the chat. Then pass whatever they paste (a bare code or the full redirect URL) to `finish_auth`, which exchanges it, saves the token, and returns the credentials. The code is single-use and PKCE-bound to this kernel's flow state, so relaying it through the chat is safe. `auth_url` requests the union of the saved token's scopes and the requested ones, so re-authorizing never drops existing grants.
 
 ```python
 url = auth_url(scopes=['https://www.googleapis.com/auth/gmail.readonly'])
