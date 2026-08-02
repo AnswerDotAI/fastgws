@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 0.2.6
+
+### New Features
+
+- Add split OAuth flow (auth_url/finish_auth) for agent-friendly auth ([#13](https://github.com/AnswerDotAI/fastgws/pull/13)), thanks to [@ncoop57](https://github.com/ncoop57)
+- Pin version
+
+
 ## 0.2.5
 
 ### New Features
