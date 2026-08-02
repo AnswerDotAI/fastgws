@@ -12,7 +12,8 @@ from collections.abc import Sized
 from fastcore.utils import *
 from .auth import *
 from fastspec.spec import SpecParser
-from fastspec.oapi import AsyncTransport, OpFunc, _build_groups
+from fastspec.oapi import AsyncTransport, OpFunc
+from fastcore.apisurface import mk_groups
 from googleapiclient.discovery import build
 from googleapiclient.http import BatchHttpRequest
 
@@ -93,7 +94,7 @@ class GWSApi:
         self.transport = GWSTransport(timeout=timeout, base_headers=hdrs, gcls=self.gcls, creds=creds)
         self.ops = [GWSOpFunc(o, self.transport, self.spec.base_url, noop) for o in self.spec.ops]
         self.func_dict = {f"{o.path}:{o.verb.upper()}": o for o in self.ops}
-        self.groups = _build_groups(self.ops)
+        self.groups = mk_groups(self.ops)
         for k,v in self.groups.items(): setattr(self, k, v)
 
     def _get_doc(self, service, version=None):
