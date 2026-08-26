@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
+from pyskills.core import allow
 
 import asyncio, json, httpx
 
@@ -43,6 +44,7 @@ def listen_for_code(port):
 
 _flow = None
 
+@allow
 def auth_url(creds_path=None, scopes=None, redirect_uri=None, token_path=None):
     "Start an interactive OAuth flow, returning the URL for the user to visit; complete with `finish_auth`."
     global _flow
@@ -56,6 +58,7 @@ def auth_url(creds_path=None, scopes=None, redirect_uri=None, token_path=None):
     url, _ = _flow.authorization_url(access_type='offline', prompt='consent')
     return url
 
+@allow
 def finish_auth(code, token_path=None):
     "Exchange the code (or full redirect URL) pasted by the user for creds, saved to `token_path`."
     if _flow is None: raise ValueError('No auth flow in progress; call `auth_url` first')
@@ -67,9 +70,13 @@ def finish_auth(code, token_path=None):
     creds.token_path.write_text(creds.to_json())
     return creds
 
+@allow
 async def oauth_creds(creds_path=None, token_path=None, scopes=None,
     interactive=True, redirect_uri=None, listen=False, port=0, open_url=print):
-    "OAuth creds from config-dir `credentials.json`/`token.json` for `scopes`."
+    """OAuth creds from config-dir `credentials.json`/`token.json` for `scopes`.
+
+    `@allow` is applied at definition so every `from fastgws.auth import oauth_creds` copy is the sandbox-tracked wrapper:
+    an expired token is refreshed on a worker thread, where only a tracked call's context survives the audit."""
     if scopes is None: raise ValueError('`scopes` is required')
     cfg = gws_config_dir()
     creds_path = Path(ifnone(creds_path, cfg/'credentials.json'))
