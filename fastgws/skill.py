@@ -106,5 +106,5 @@ from fastgws.core import GWSApi, GWSObject, GWSOpFunc
 
 __all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'auth_url', 'finish_auth', 'logout', 'svc_acct_creds']
 
-allow(GWSApi.__init__, oauth_creds, auth_url, finish_auth, svc_acct_creds, {GWSOpFunc: ['__call__']})
+allow(GWSApi.__init__, svc_acct_creds, {GWSOpFunc: ['__call__']})
 
