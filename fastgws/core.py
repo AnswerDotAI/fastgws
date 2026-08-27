@@ -14,8 +14,6 @@ from .auth import *
 from fastspec.spec import SpecParser
 from fastspec.oapi import AsyncTransport, OpFunc
 from fastcore.apisurface import mk_groups
-from googleapiclient.discovery import build
-from googleapiclient.http import BatchHttpRequest
 
 import asyncio, httpx, os, random
 
@@ -82,7 +80,6 @@ class GWSApi:
         if service is None: raise ValueError('`service` is required')
         self.service,self.version = service,version
         self.doc = doc or self._get_doc(service, version)
-        self._gservice = build(service, self.version, credentials=creds, cache_discovery=False)
         self.spec = SpecParser.from_discovery(self.doc)
         self.gcls = gclasses(self.doc)
 
@@ -106,16 +103,3 @@ class GWSApi:
             url = api['discoveryRestUrl']
             self.version = api['version']
         return httpx.get(url).json()
-    
-    def batch_get(self, requests, chunk_sz=50):
-        "Batch fetch `requests` (list of (id, HttpRequest) tuples) via googleapiclient batch protocol"
-        results = {}
-        def _cb(rid, resp, exc):
-            if exc: raise exc
-            results[rid] = resp
-        uri = f'https://www.googleapis.com/batch/{self.service}/{self.version}'
-        for chunk in chunked(requests, chunk_sz):
-            batch = BatchHttpRequest(callback=_cb, batch_uri=uri)
-            for rid, r in chunk: batch.add(r, request_id=rid)
-            batch.execute()
-        return results
