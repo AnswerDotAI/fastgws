@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = ['fastcore>=2.1.16', 'fastspec>=0.2.0', 'google-auth>=2.30.0',
+dependencies = ['fastcore>=2.1.16', 'fastspec>=0.2.4', 'google-auth>=2.30.0',
                 'google-auth-oauthlib>=1.2.0', 'httpx2', 'pyskills']
 
 [project.urls]
