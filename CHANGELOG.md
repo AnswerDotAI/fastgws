@@ -2,6 +2,18 @@
 
 <!-- do not remove -->
 
+## 0.2.7
+
+### New Features
+
+- Add resilient Google API clients and Workspace administration ([#17](https://github.com/AnswerDotAI/fastgws/pull/17)), thanks to [@jph00](https://github.com/jph00)
+- Drop `batch_get` and the googleapiclient dependency ([#15](https://github.com/AnswerDotAI/fastgws/pull/15)), thanks to [@ncoop57](https://github.com/ncoop57)
+
+### Bugs Squashed
+
+- Apply `@allow` to the OAuth functions at definition ([#14](https://github.com/AnswerDotAI/fastgws/pull/14)), thanks to [@ncoop57](https://github.com/ncoop57)
+
+
 ## 0.2.6
 
 ### New Features
