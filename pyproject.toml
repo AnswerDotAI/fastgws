@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = ['fastcore>=2.1.16', 'fastspec>=0.2.0', 'google-auth>=2.30.0',
-                'google-auth-oauthlib>=1.2.0', 'httpx2', 'pyskills']
+                'httpx2', 'pyskills']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/fastgws"
@@ -37,3 +37,6 @@ allowed_cell_metadata_keys = ['solveit_ai']
 
 [project.entry-points.pyskills]
 "fastgws.skill" = "fastgws.skill"
+
+[tool.chkstyle]
+skip_paths = ["_modidx.py", "_proc"]

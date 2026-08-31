@@ -1,22 +1,22 @@
-"""Use fastgws to read and work with Google Workspace and Google APIs from Python. This skill exposes the base `GWSApi` client, OAuth credential loading, and generated Google API operations. Use it when the task needs access to Gmail, Calendar, Drive, Docs, Sheets, Places, or another Google API published through Google's discovery documents.
+"""Use fastgws to read and work with Google Workspace and Google APIs from Python. This skill exposes the base `GWSApi` client, OAuth credential loading, and generated Google API operations, and Workspace user administration. Use it when the task needs access to Gmail, Calendar, Drive, Docs, Sheets, Places, or another Google API published through Google's discovery documents.
 
 # Authentication
 
-Use `oauth_creds` to load Google OAuth credentials for the scopes needed by the task. Agents should normally call it with `interactive=False`, which means only previously authorized tokens can be used.
+Use `oauth_creds(account=...)` to load the standard token created by [`gclientid`](https://answerdotai.github.io/gclientid/). fastgws never opens a browser or grants new scopes. Authorize or expand an account's grant outside Python with `gclientid-auth`, then load it by email address:
 
-If `interactive=False` fails with a missing or invalid token error, the requested scopes have not been authorized yet. Authorize them with the two-step flow: `auth_url` returns an authorization link; show it to the user and ask them to visit it, approve access, and paste the code it displays back into the chat. Then pass whatever they paste (a bare code or the full redirect URL) to `finish_auth`, which exchanges it, saves the token, and returns the credentials. The code is single-use and PKCE-bound to this kernel's flow state, so relaying it through the chat is safe. `auth_url` requests the union of the saved token's scopes and the requested ones, so re-authorizing never drops existing grants.
-
-```python
-url = auth_url(scopes=['https://www.googleapis.com/auth/gmail.readonly'])
-# show `url` to the user; when they reply with the code:
-creds = finish_auth(code)
+```sh
+gclientid-auth --account me@example.com --preset google-apps
 ```
 
-The link redirects to the first entry of `redirect_uris` in `credentials.json` unless `redirect_uri=` is passed; edit that file to control the default. A hosted code-display page such as `https://oauth.appapis.org/redirect` is the usual choice, since the user can copy the code straight off the page.
+```python
+creds = await oauth_creds(account='me@example.com')
+```
+
+Pass `scopes=` when the task wants fastgws to verify that the saved token includes a particular set. A missing token, an invalid token, or insufficient scopes raises without starting an interactive flow. `token_path=` loads an authorized-user JSON file stored somewhere else.
 
 Access tokens refresh automatically during API calls (including after a 401), and the fresh token is saved back to the token file, so there is no need to re-run `oauth_creds` when a token expires.
 
-To sign out, `await logout()` revokes the saved grant at Google and deletes the stored token (a no-op if none is saved).
+To sign out, `await logout(account='me@example.com')` revokes the saved grant at Google and deletes the stored token (a no-op if none is saved).
 
 Service accounts are available through `svc_acct_creds` for Google APIs that support them. Use them when the user has provided a local service account JSON file and the target API can be accessed without a browser-based user consent flow. For Workspace data owned by a user, service accounts usually need domain-wide delegation and a `subject` user; otherwise OAuth credentials are the safer default.
 
@@ -40,6 +40,16 @@ Generated operations are awaitable methods. Pass parameters using the Python nam
 ```python
 msgs = await gmail.users.messages.list(user_id='me', max_results=10)
 ```
+
+Use `operation.batch([...])` when a Google discovery service advertises HTTP batching. Each item is a dictionary of arguments for that same operation; results preserve order. The default chunk size is 50, and `return_exceptions=True` puts a structured `APIError` in a failed call's result position. fastgws retries transient ordinary requests and only the failed parts of a batch, including Google 403 rate-limit reasons, 429s, 5xx responses, and network failures.
+
+```python
+msgs = await gmail.users.messages.get.batch([
+    dict(user_id='me', id=mid, format='minimal', fields='id,labelIds') for mid in ids
+])
+```
+
+Google clients request gzip automatically. Use the global `fields=` parameter to avoid transferring fields the task does not need.
 
 # Finding available methods
 
@@ -89,22 +99,33 @@ Use `calendar_id='primary'` for the authenticated user's main calendar. For even
 events = await calendar.events.list(calendar_id='primary', single_events=True, order_by='startTime')
 ```
 
+# Workspace administration
+
+Use `WorkspaceAdmin(creds)` for user lifecycle work. Its credentials need `admin.directory.user` and `apps.licensing`. Creation, licence assignment/removal, suspension/restoration, and deletion are deliberately separate methods; inspect the domain's existing product and SKU before assigning a licence.
+
+```python
+admin = WorkspaceAdmin(creds)
+user = await admin.create_user('new@example.com', 'New', 'User', password,
+                               org_unit_path='/Internal')
+await admin.assign_license(user.primaryEmail, sku_id)
+```
 # Gotchas
 
-`oauth_creds(..., interactive=True)` blocks on `input()`, which agent tool calls cannot answer. From an agent, use `interactive=False` for saved tokens, and the `auth_url`/`finish_auth` flow to authorize new scopes.
+`oauth_creds` only loads or refreshes existing credentials. If it reports a missing, invalid, or insufficient token, the user must run `gclientid-auth` for the account and required preset/scopes.
 
 Google APIs use many different parameter names. Inspect the specific operation with `doc(...)` before guessing. fastgws converts names to Python style, so `userId` becomes `user_id`, `maxResults` becomes `max_results`, and so on.
 
-Some list responses are paginated. If the response includes `nextPageToken`, pass it back as `page_token` to fetch the next page.
+List operations expose `pages()`. The async iterator forwards each `nextPageToken` as `page_token` and stops after the final page.
 
 Generated clients expose whatever the Google discovery document exposes. The presence of a method does not mean the saved credentials have the required scope.
 """
 
 from pyskills.core import allow
-from fastgws.auth import oauth_creds, auth_url, finish_auth, logout, svc_acct_creds
+from fastgws.auth import oauth_creds, logout, svc_acct_creds
 from fastgws.core import GWSApi, GWSObject, GWSOpFunc
+from fastgws.admin import WorkspaceAdmin
 
-__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'auth_url', 'finish_auth', 'logout', 'svc_acct_creds']
+__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'logout', 'svc_acct_creds', 'WorkspaceAdmin']
 
-allow(GWSApi.__init__, svc_acct_creds, {GWSOpFunc: ['__call__']})
-
+allow(GWSApi.__init__, svc_acct_creds, {GWSOpFunc: ['__call__', 'batch']}, WorkspaceAdmin.__init__, WorkspaceAdmin.create_user,
+    WorkspaceAdmin.assign_license, WorkspaceAdmin.remove_license, WorkspaceAdmin.suspend_user, WorkspaceAdmin.delete_user)
