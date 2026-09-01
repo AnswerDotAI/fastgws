@@ -12,7 +12,7 @@ from functools import cache
 
 import httpx
 
-__version__ = "0.2.9"
+__version__ = "0.2.10"
 
 @cache
 def apis(): return httpx.get('https://discovery.googleapis.com/discovery/v1/apis').json()['items']
