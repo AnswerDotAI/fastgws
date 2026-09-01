@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.9
+
+### New Features
+
+- Import APIError from fasttransport ([#19](https://github.com/AnswerDotAI/fastgws/pull/19)), thanks to [@jph00](https://github.com/jph00)
+
+
 ## 0.2.8
 
 ### New Features
