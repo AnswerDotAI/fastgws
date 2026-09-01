@@ -207,14 +207,28 @@ Markdown(f'[{p.displayName.text}]({p.googleMapsUri})')
 
 fastgws can also create service clients dynamically from Google’s discovery index. If Google publishes a discovery document for a service, you can usually import that service by name, for example `from fastgws import Sheets`, then use it with the same `creds`, `token`, or `api_key` arguments shown above.
 
-Services outside the central discovery index can be loaded from their own discovery URL. The discovery request uses the same credentials, token, API key, and custom headers as the resulting client, which also supports services that require caller identity or a quota project just to return their document.
+Services outside the central discovery index can be loaded from their own discovery URL. The discovery request uses the same credentials, token, API key, quota project, and custom headers as the resulting client.
 
 ``` python
-addons = await GWSApi.from_discovery_url(
-    "https://gsuiteaddons.googleapis.com/$discovery/rest?version=v1",
-    creds=creds, quota_project="my-project")
-deployments = await addons.projects.deployments.list(parent="projects/my-project")
+drive = await GWSApi.from_discovery_url(
+    'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+    creds=creds)
 ```
+
+## Workspace Add-ons
+
+[`WorkspaceAddons`](https://answerdotai.github.io/fastgws/addons.html#workspaceaddons) manages HTTP add-on deployments through the documented REST endpoints. It does not fetch the Workspace Add-ons discovery document. `deploy` creates or replaces one stable deployment ID, and `ensure_installed` installs it for the credentials’ user only when needed. After replacing a development deployment’s callback configuration, use `reinstall` so host applications pick up the change.
+
+``` python
+from fastgws import WorkspaceAddons
+
+addons = WorkspaceAddons('my-project', creds)
+auth = await addons.authorization()
+deployment = await addons.deploy('dev', manifest)
+status = await addons.ensure_installed('dev')
+```
+
+Create one client per tester because test installation belongs to the authenticated user.
 
 ## Workspace administration
 
