@@ -18,7 +18,7 @@ from uuid import uuid4
 
 from fastcore.utils import *
 from .auth import *
-from fastspec.errors import APIError
+from fasttransport.errors import APIError
 from fastspec.spec import SpecParser
 from fastspec.oapi import AsyncTransport, OpFunc
 from fastcore.apisurface import mk_groups
