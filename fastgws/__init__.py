@@ -1,11 +1,13 @@
 """Modules:
 
+- `fastgws.addons`: Google Workspace Add-ons deployment and test-installation lifecycle.
 - `fastgws.admin`: Workspace user and license administration through Google APIs.
 - `fastgws.skill`: Use fastgws to read and work with Google Workspace and Google APIs from Python. This skill exposes the base `GWSApi` client, OAuth credential loading, and generated Google API operations, and Workspace user administration. Use it when the task needs access to Gmail, Calendar, Drive, Docs, Sheets, Places, or another Google API published through Google's discovery documents."""
 
 from .auth import *
 from .core import *
 from .admin import *
+from .addons import *
 from functools import cache
 
 import httpx
