@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.8
+
+### New Features
+
+- Add WorkspaceAddons for Workspace Add-ons deployment and test installation ([#18](https://github.com/AnswerDotAI/fastgws/pull/18)), thanks to [@jph00](https://github.com/jph00)
+
+
 ## 0.2.7
 
 ### New Features
