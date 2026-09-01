@@ -1,7 +1,7 @@
 import httpx, httpx2, pytest
 
 from fastcore.utils import noop
-from fastspec.errors import APIError
+from fasttransport.errors import APIError
 from fastspec.spec import OpSpec
 
 from fastgws.core import GWSOpFunc, GWSTransport
