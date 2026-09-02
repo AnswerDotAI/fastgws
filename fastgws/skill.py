@@ -91,6 +91,8 @@ Use Drive search queries with `drive.files.list(q=...)`. Ask only for the fields
 files = await drive.files.list(q="name contains 'report' and trashed=false", page_size=10)
 ```
 
+A Drive method that accepts content has an upload twin. `drive.files.upload(media=..., name=...)` sends bytes, a path, or a file-like with the same metadata `files.create` takes; `drive.files.update_media(file_id=..., media=...)` replaces a file's content. Uploads use Google's resumable protocol; the content is read into memory and sent in one request, so very large files are bounded by available memory.
+
 # Calendar notes
 
 Use `calendar_id='primary'` for the authenticated user's main calendar. For event lists, prefer `single_events=True` and `order_by='startTime'` when reading a time window.
