@@ -30,16 +30,16 @@ from fastgws.auth import *
 
 fastgws supports OAuth credentials and API keys. OAuth is the usual choice for Google Workspace APIs such as Gmail, Calendar, Drive, and Docs, because these APIs act on behalf of a user and require explicit scopes.
 
-Authorization is deliberately separate from this library. Use [`gclientid`](https://answerdotai.github.io/gclientid/) once to create your Google Cloud project, consent configuration, and OAuth client, then use `gclientid-auth` whenever an account needs a token or additional scopes. fastgws only loads and refreshes those existing tokens; it never opens a browser or changes a grant.
+Credentials are [`gclientid`](https://answerdotai.github.io/gclientid/)’s job. It creates your Google Cloud project, consent configuration, and OAuth clients, stores one token per account and client, and loads, refreshes, and re-authorizes those tokens. fastgws depends on it and re-exports its token functions, so `oauth_creds` here is gclientid’s `oauth_creds`. This page shows how fastgws uses the credentials; read the gclientid README for provisioning, presets, the stored files, and re-authorization.
 
 API keys are useful for public Google APIs that support key-based access, such as Places. You can pass `api_key=...` directly or set `GOOGLE_API_KEY` or `GWS_API_KEY` in the environment.
 
 ### Use a gclientid token
 
-[`gclientid`](https://answerdotai.github.io/gclientid/) creates a Web OAuth client and one authorized-user token file per Google account. Authorize the account first, choosing a preset or explicit scopes:
+Set up once with `gclientid` (see “Quick start” in the gclientid README), then authorize an account, choosing a preset or explicit scopes (“Access presets” there):
 
 ``` sh
-gclientid-auth --account me@example.com --preset google-apps
+gclientid-auth me@example.com --preset google-apps
 ```
 
 Then pass the account name instead of constructing a path:
@@ -48,12 +48,13 @@ Then pass the account name instead of constructing a path:
 creds = await oauth_creds(account='me@example.com')
 ```
 
-This loads `$XDG_CONFIG_HOME/gclientid/oauth-token-me@example.com.json`. The token records its granted scopes, so `scopes` is optional; when supplied, fastgws verifies that the token covers them. Access tokens are refreshed back into the same file while preserving mode `0600` and gclientid’s verified `account` metadata. Pass `token_path=` instead for an authorized-user file stored elsewhere.
+The token records its granted scopes, so `scopes` is optional; when supplied, `oauth_creds` verifies that the token covers them. Access tokens are refreshed back into the same file during API calls, including after a 401. When a token is missing, lacks the scopes, or can no longer be refreshed, what happens is a gclientid setting: by default on a machine where `gclientid` ran, it re-authorizes in your browser and returns; otherwise it raises an error naming the `gclientid-auth` command to run (“Automatic re-authorization” in the gclientid README). Pass `token_path=` instead for an authorized-user file stored elsewhere.
 
-For a client created by `gclientid --internal`, select its independent `*-internal` token without constructing a path:
+`internal=True` and `desktop=True` select the tokens of gclientid’s Internal-audience and Desktop clients (“Stored files” in the gclientid README):
 
 ``` python
 creds = await oauth_creds(account="me@example.com", internal=True)
+creds = await oauth_creds(account="me@example.com", desktop=True)
 ```
 
 ``` python

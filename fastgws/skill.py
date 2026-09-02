@@ -2,17 +2,17 @@
 
 # Authentication
 
-Use `oauth_creds(account=...)` to load the standard token created by [`gclientid`](https://answerdotai.github.io/gclientid/). fastgws never opens a browser or grants new scopes. Authorize or expand an account's grant outside Python with `gclientid-auth`, then load it by email address:
+Use `oauth_creds(account=...)` to load the standard token created by [`gclientid`](https://answerdotai.github.io/gclientid/); the function itself is gclientid's, re-exported here. Authorize or expand an account's grant with `gclientid-auth`, then load it by email address:
 
 ```sh
-gclientid-auth --account me@example.com --preset google-apps
+gclientid-auth me@example.com --preset google-apps
 ```
 
 ```python
 creds = await oauth_creds(account='me@example.com')
 ```
 
-Pass `scopes=` when the task wants fastgws to verify that the saved token includes a particular set. A missing token, an invalid token, or insufficient scopes raises without starting an interactive flow. `token_path=` loads an authorized-user JSON file stored somewhere else.
+Pass `scopes=` when the task wants fastgws to verify that the saved token includes a particular set. `token_path=` loads an authorized-user JSON file stored somewhere else. What happens when the token is missing, insufficient, or can no longer be refreshed is gclientid's decision: see "Automatic re-authorization" in the gclientid README, and the Gotchas below.
 
 Access tokens refresh automatically during API calls (including after a 401), and the fresh token is saved back to the token file, so there is no need to re-run `oauth_creds` when a token expires.
 
@@ -111,7 +111,7 @@ await admin.assign_license(user.primaryEmail, sku_id)
 ```
 # Gotchas
 
-`oauth_creds` only loads or refreshes existing credentials. If it reports a missing, invalid, or insufficient token, the user must run `gclientid-auth` for the account and required preset/scopes.
+`oauth_creds` loads or refreshes stored credentials. When gclientid's store has `reauth = true` (the default on a machine where `gclientid` provisioned the client), a missing, insufficient, or unrefreshable token makes it run `gclientid-auth` in the configured browser and wait for the user; otherwise it raises an error naming that command, and the user must run it. Pass `reauth=` to force either behaviour.
 
 Google APIs use many different parameter names. Inspect the specific operation with `doc(...)` before guessing. fastgws converts names to Python style, so `userId` becomes `user_id`, `maxResults` becomes `max_results`, and so on.
 
