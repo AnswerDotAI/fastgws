@@ -9,13 +9,21 @@ __all__ = ['GWSObject', 'gclasses', 'g2obj', 'GWSTransport', 'GWSOpFunc', 'GWSAp
 
 # %% ../nbs/00_core.ipynb #1a375d85
 from collections.abc import Sized
+from datetime import datetime, timezone
+from email.parser import BytesParser
+from email.policy import default as email_policy
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlencode, urljoin, urlsplit
+from uuid import uuid4
+
 from fastcore.utils import *
 from .auth import *
+from fasttransport.errors import APIError
 from fastspec.spec import SpecParser
 from fastspec.oapi import AsyncTransport, OpFunc
 from fastcore.apisurface import mk_groups
 
-import asyncio, httpx, os, random
+import asyncio, httpx, httpx2, json, os, random
 
 # %% ../nbs/00_core.ipynb #bcf1c22a
 class GWSObject(AttrDict):
@@ -23,7 +31,7 @@ class GWSObject(AttrDict):
         keys = 'id name title summary emailAddress threadId documentId spreadsheetId sheetId mimeType kind'.split()
         bits = [f"{k}={self[k]!r}" for k in keys if k in self]
         bits += [f"{k}={len(v)}" for k,v in self.items()
-                 if isinstance(v, Sized) and not isinstance(v, (str, bytes)) and k not in keys]
+            if isinstance(v, Sized) and not isinstance(v, (str, bytes)) and k not in keys]
         return f"{type(self).__name__}({', '.join(bits)})"
 
 def gclasses(doc):
@@ -40,11 +48,42 @@ def g2obj(x, gcls):
     return cls({k:g2obj(v, gcls) for k,v in x.items()})
 
 # %% ../nbs/00_core.ipynb #e6dae508
-@patch
-def _retry_after(self:httpx.HTTPStatusError):
-    v = self.response.headers.get('retry-after')
-    return float(v) if v and v.replace('.','',1).isdigit() else None
+_rate_reasons = {'ratelimitexceeded', 'userratelimitexceeded', 'rate_limit_exceeded', 'user_rate_limit_exceeded'}
 
+def _reasons(x):
+    if isinstance(x, dict):
+        own = {str(v).casefold() for k,v in x.items() if k.casefold() == 'reason'}
+        return own | set().union(*(_reasons(v) for v in x.values()), set())
+    if isinstance(x, (list,tuple)): return set().union(*(_reasons(v) for v in x), set())
+    return set()
+
+def _retryable(exc):
+    err = exc if isinstance(exc, APIError) else exc.api_error()
+    return err.retryable or bool(_reasons(err.raw) & _rate_reasons)
+
+def _retry_after(exc):
+    response = getattr(exc, 'response', None)
+    if response is None: return
+    value = response.headers.get('retry-after')
+    if not value: return
+    try: return max(0, float(value))
+    except ValueError: pass
+    try:
+        when = parsedate_to_datetime(value)
+        if when.tzinfo is None: when = when.replace(tzinfo=timezone.utc)
+        return max(0, (when-datetime.now(timezone.utc)).total_seconds())
+    except (TypeError, ValueError, OverflowError): return
+
+
+
+
+# %% ../nbs/00_core.ipynb #15c829f6
+def _retry_delay(exc, attempt, base, max_backoff):
+    delay = _retry_after(exc)
+    return delay if delay is not None else min(max_backoff, base*2**attempt) + random.uniform(0, base)
+
+
+# %% ../nbs/00_core.ipynb #ceb0c83c
 class GWSTransport(AsyncTransport):
     def __init__(self, *args, gcls=None, creds=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,28 +93,158 @@ class GWSTransport(AsyncTransport):
         if self.creds: self.base_headers |= auth_headers(self.creds)
         return super()._request_headers(headers, files=files)
 
-    async def request(self, *args, raw=False, n_retries=5, base=1.0, **kwargs):
+    async def request(self, *args, raw=False, n_retries=5, base=1.0, max_backoff=64.0, **kwargs):
+        if n_retries < 1: raise ValueError("n_retries must be at least 1")
         refreshed = False
-        for i in range(n_retries):
+        for attempt in range(n_retries):
             try:
                 if self.creds and not self.creds.valid: await refresh_creds(self.creds)
                 res = await super().request(*args, raw=raw, **kwargs)
                 return res if raw else g2obj(res, self.gcls)
-            except httpx.HTTPStatusError as e:
-                do_refresh = e.response.status_code==401 and self.creds and not refreshed
-                if i==n_retries-1 or not (do_refresh or e.api_error().retryable): raise
+            except (httpx2.HTTPStatusError, httpx2.RequestError) as e:
+                response = getattr(e, 'response', None)
+                do_refresh = response is not None and response.status_code == 401 and self.creds and not refreshed
+                if attempt == n_retries-1 or not (do_refresh or _retryable(e)): raise
                 if do_refresh:
                     refreshed = True
                     await refresh_creds(self.creds)
-                else:          await asyncio.sleep(e._retry_after() or base*2**i + random.uniform(0, base))
+                else: await asyncio.sleep(_retry_delay(e, attempt, base, max_backoff))
 
-class GWSOpFunc(OpFunc): pass
 
+# %% ../nbs/00_core.ipynb #18bfc7d0
+class GWSOpFunc(OpFunc):
+    async def pages(self, *args, **kwargs):
+        "Yield every page from a Google list operation"
+        while True:
+            page = await self(*args, **kwargs)
+            yield page
+            token = page.get('nextPageToken')
+            if not token: return
+            kwargs['page_token'] = token
+
+    def _raise_with_context(self, exc, *, endpoint, route, query, body):
+        if isinstance(exc, (httpx2.HTTPStatusError, httpx2.RequestError)):
+            err = exc.api_error(endpoint=endpoint)
+            err.retryable = _retryable(err)
+            raise err from exc
+        raise exc
+
+    def _batch_call(self, call):
+        if not isinstance(call, dict): raise TypeError('batch calls must be dictionaries of operation arguments')
+        stream,url,headers,query,route,kw = self._prep((), dict(call))
+        if stream: raise TypeError('batch calls cannot stream')
+        unsupported = set(kw)-{'body'}
+        if unsupported: raise TypeError(f'batch calls do not support {", ".join(sorted(unsupported))}')
+        parsed = urlsplit(url)
+        target = parsed.path or '/'
+        query_string = urlencode(query, doseq=True)
+        if query_string: target += '?' + query_string
+        return self.verb.upper(),url,target,headers,kw.get('body')
+
+    def _batch_content(self, calls, boundary):
+        requests,parts = [],[]
+        for i,call in enumerate(calls):
+            method,url,target,headers,body = self._batch_call(call)
+            payload = b'' if body is None else json.dumps(body, separators=(',', ':')).encode()
+            hdrs = {str(k):str(v) for k,v in headers.items()}
+            if body is not None and not any(k.casefold() == 'content-type' for k in hdrs): hdrs['Content-Type'] = 'application/json'
+            inner = f'{method} {target} HTTP/1.1\r\n'.encode()
+            inner += ''.join(f'{k}: {v}\r\n' for k,v in hdrs.items()).encode() + b'\r\n' + payload
+            part = f'--{boundary}\r\nContent-Type: application/http\r\nContent-ID: <{i}>\r\n\r\n'.encode()
+            parts.append(part + inner + b'\r\n')
+            requests.append((method,url))
+        parts.append(f'--{boundary}--\r\n'.encode())
+        return b''.join(parts),requests
+
+
+
+
+
+# %% ../nbs/00_core.ipynb #c73cb296
+@patch
+def _batch_results(self:GWSOpFunc, response, requests):
+    ctype = response.headers.get('content-type')
+    if not ctype: raise ValueError('Google batch response has no Content-Type')
+    prefix = f'Content-Type: {ctype}\r\nMIME-Version: 1.0\r\n\r\n'.encode()
+    parts = list(BytesParser(policy=email_policy).parsebytes(prefix + response.content).iter_parts())
+    if len(parts) != len(requests): raise ValueError(f'Google batch returned {len(parts)} parts for {len(requests)} calls')
+    results = []
+    for part,(method,url) in zip(parts, requests):
+        raw = part.get_payload(decode=True)
+        if raw is None: raw = part.get_payload().encode()
+        head,body = raw.replace(b'\r\n', b'\n').split(b'\n\n', 1)
+        lines = head.splitlines()
+        status = int(lines[0].split()[1])
+        headers = dict(line.decode().split(':', 1) for line in lines[1:] if b':' in line)
+        inner = httpx2.Response(status, headers=headers, content=body, request=httpx2.Request(method, url))
+        try: inner.raise_for_status()
+        except httpx2.HTTPStatusError as e:
+            err = e.api_error(endpoint=f'{method} {urlsplit(url).path}')
+            err.retryable = _retryable(err)
+            results.append(err)
+        else: results.append(g2obj(self.client._decode(inner), self.client.gcls))
+    return results
+
+@patch
+async def _batch_once(self:GWSOpFunc, calls):
+    boundary = f'fastgws_{uuid4().hex}'
+    content,requests = self._batch_content(calls, boundary)
+    headers = {'Content-Type':f'multipart/mixed; boundary={boundary}'}
+    try: response = await self.client.request('POST', self.batch_url, headers=headers, content=content, raw=True)
+    except Exception as e: self._raise_with_context(e, endpoint=self.batch_url, route=None, query=None, body=None)
+    return self._batch_results(response, requests)
+
+
+# %% ../nbs/00_core.ipynb #63a9b287
+@patch
+async def _batch_chunk(self:GWSOpFunc, calls, n_retries, base, max_backoff):
+    results,pending,refreshed = [None]*len(calls),dict(enumerate(calls)),False
+    for attempt in range(n_retries):
+        indexes = list(pending)
+        values = await self._batch_once([pending[i] for i in indexes])
+        retry,refresh,waits = {},False,[]
+        for i,value in zip(indexes, values):
+            if not isinstance(value, APIError): results[i] = value
+            elif value.status_code == 401 and self.client.creds and not refreshed and attempt < n_retries-1:
+                retry[i],refresh = pending[i],True
+            elif value.retryable and attempt < n_retries-1:
+                retry[i] = pending[i]
+                waits.append(_retry_after(value))
+            else: results[i] = value
+        if not retry: break
+        if refresh:
+            refreshed = True
+            await refresh_creds(self.client.creds)
+        else:
+            delays = [v for v in waits if v is not None]
+            delay = max(delays) if delays else min(max_backoff, base*2**attempt) + random.uniform(0, base)
+            await asyncio.sleep(delay)
+        pending = retry
+    return results
+
+
+# %% ../nbs/00_core.ipynb #2c842525
+@patch
+async def batch(self:GWSOpFunc, calls, chunk=50, return_exceptions=False, n_retries=5, base=1.0, max_backoff=64.0):
+    "Run dictionaries of arguments for this operation through Google's discovery-advertised HTTP batch endpoint"
+    if not self.batch_url: raise ValueError('This Google service does not advertise a batch endpoint')
+    if not 1 <= chunk <= 100: raise ValueError('chunk must be between 1 and 100')
+    if n_retries < 1: raise ValueError('n_retries must be at least 1')
+    calls = list(calls)
+    results = []
+    for i in range(0, len(calls), chunk): results.extend(await self._batch_chunk(calls[i:i+chunk], n_retries, base, max_backoff))
+    if not return_exceptions:
+        error = first(x for x in results if isinstance(x, APIError))
+        if error: raise error
+    return results
+
+
+# %% ../nbs/00_core.ipynb #151ae5d3
 class GWSApi:
     service = None
 
     def __init__(self, service=None, version=None, token=None, creds=None,
-                 api_key=None, headers=None, timeout=60.0, doc=None):
+        api_key=None, headers=None, timeout=60.0, doc=None):
         service = ifnone(service, self.service)
         if service is None: raise ValueError('`service` is required')
         self.service,self.version = service,version
@@ -83,23 +252,47 @@ class GWSApi:
         self.spec = SpecParser.from_discovery(self.doc)
         self.gcls = gclasses(self.doc)
 
-        hdrs = headers or {}
+        hdrs = {'Accept-Encoding':'gzip', 'User-Agent':'fastgws (gzip)', **(headers or {})}
         if creds or token: hdrs = {**auth_headers(creds, token), **hdrs}
         if api_key is None and not (creds or token): api_key = os.getenv('GOOGLE_API_KEY', os.getenv('GWS_API_KEY'))
         if api_key: hdrs = {'X-Goog-Api-Key': api_key, **hdrs}
 
+        root,batch_path = self.doc.get('rootUrl'),self.doc.get('batchPath')
+        batch_url = urljoin(root.rstrip('/')+'/', batch_path) if root and batch_path else None
         self.transport = GWSTransport(timeout=timeout, base_headers=hdrs, gcls=self.gcls, creds=creds)
         self.ops = [GWSOpFunc(o, self.transport, self.spec.base_url, noop) for o in self.spec.ops]
+        for op in self.ops: op.batch_url = batch_url
         self.func_dict = {f"{o.path}:{o.verb.upper()}": o for o in self.ops}
         self.groups = mk_groups(self.ops)
         for k,v in self.groups.items(): setattr(self, k, v)
 
+    @classmethod
+    async def from_discovery_url(cls, url, service=None, version=None, token=None, creds=None,
+        api_key=None, headers=None, quota_project=None, timeout=60.0):
+        "Create a client from a discovery document fetched from `url`"
+        headers = headers or {}
+        quota_project = quota_project or getattr(creds, 'quota_project_id', None)
+        if quota_project: headers = {'X-Goog-User-Project': quota_project, **headers}
+        hdrs = headers
+        if creds and not creds.valid: await refresh_creds(creds)
+        if creds or token: hdrs = {**auth_headers(creds, token), **hdrs}
+        if api_key is None and not (creds or token): api_key = os.getenv('GOOGLE_API_KEY', os.getenv('GWS_API_KEY'))
+        if api_key: hdrs = {'X-Goog-Api-Key': api_key, **hdrs}
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, headers=hdrs)
+            response.raise_for_status()
+        doc = response.json()
+        service = service or cls.service or doc.get('name')
+        version = version or doc.get('version')
+        return cls(service=service, version=version, token=token, creds=creds,
+            api_key=api_key, headers=headers, timeout=timeout, doc=doc)
+
     def _get_doc(self, service, version=None):
-        if version:
-            url = f'https://www.googleapis.com/discovery/v1/apis/{service}/{version}/rest'
+        if version: url = f'https://www.googleapis.com/discovery/v1/apis/{service}/{version}/rest'
         else:
             apis = httpx.get('https://discovery.googleapis.com/discovery/v1/apis').json()['items']
             api = first(a for a in apis if a['name'] == service and a.get('preferred'))
             url = api['discoveryRestUrl']
             self.version = api['version']
         return httpx.get(url).json()
+

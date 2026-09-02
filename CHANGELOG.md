@@ -2,11 +2,44 @@
 
 <!-- do not remove -->
 
+## 0.2.10
+
+### New Features
+
+- Delegate OAuth token handling to gclientid: drop local token code from fastgws.auth and re-export gclientid.creds functions ([#20](https://github.com/AnswerDotAI/fastgws/issues/20))
+
+
+## 0.2.9
+
+### New Features
+
+- Import APIError from fasttransport ([#19](https://github.com/AnswerDotAI/fastgws/pull/19)), thanks to [@jph00](https://github.com/jph00)
+
+
+## 0.2.8
+
+### New Features
+
+- Add WorkspaceAddons for Workspace Add-ons deployment and test installation ([#18](https://github.com/AnswerDotAI/fastgws/pull/18)), thanks to [@jph00](https://github.com/jph00)
+
+
+## 0.2.7
+
+### New Features
+
+- Add resilient Google API clients and Workspace administration ([#17](https://github.com/AnswerDotAI/fastgws/pull/17)), thanks to [@jph00](https://github.com/jph00)
+- Drop `batch_get` and the googleapiclient dependency ([#15](https://github.com/AnswerDotAI/fastgws/pull/15)), thanks to [@ncoop57](https://github.com/ncoop57)
+
+### Bugs Squashed
+
+- Apply `@allow` to the OAuth functions at definition ([#14](https://github.com/AnswerDotAI/fastgws/pull/14)), thanks to [@ncoop57](https://github.com/ncoop57)
+
+
 ## 0.2.6
 
 ### New Features
 
-- Add split OAuth flow (auth_url/finish_auth) for agent-friendly auth ([#13](https://github.com/AnswerDotAI/fastgws/pull/13)), thanks to [@ncoop57](https://github.com/ncoop57)
+- Add split OAuth flow (`auth_url`/`finish_auth`) for agent-friendly auth ([#13](https://github.com/AnswerDotAI/fastgws/pull/13)), thanks to [@ncoop57](https://github.com/ncoop57)
 - Pin version
 
 

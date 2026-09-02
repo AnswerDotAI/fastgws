@@ -28,21 +28,39 @@ from fastgws import Calendar, Docs, Drive, GMail, Places
 from fastgws.auth import *
 ```
 
-fastgws supports both OAuth credentials and API keys. OAuth is the usual choice for Google Workspace APIs such as Gmail, Calendar, Drive, and Docs, because these APIs act on behalf of a user and require explicit scopes.
+fastgws supports OAuth credentials and API keys. OAuth is the usual choice for Google Workspace APIs such as Gmail, Calendar, Drive, and Docs, because these APIs act on behalf of a user and require explicit scopes.
 
-`oauth_creds` looks for a Google OAuth client file named `credentials.json` in the fastgws config directory, which defaults to `~/.config/fastgws/credentials.json`. Create this OAuth client in Google Cloud Console as a web application, and register a redirect URI that displays the returned code for copy/paste, such as `https://oauth.appapis.org/redirect`. The authorization link uses the first entry of `redirect_uris` in `credentials.json` unless you pass `redirect_uri=`, so edit that file to change the default.
-
-Pass `oauth_creds` the scopes your app needs. On the first run it prints or displays an authorization link; visit that link, approve access, then paste the returned code back into the prompt. fastgws saves the resulting token in the same config directory and reuses it on later runs when the saved token covers the requested scopes, including when you request only a subset of the scopes already granted. Requesting scopes beyond the saved token re-runs the flow asking for the union of old and new, so previously granted scopes are never lost.
-
-Where a blocking prompt can’t work (agents, tool calls), split the flow: `auth_url(scopes=...)` returns the authorization link, and `finish_auth(code)` exchanges the pasted code (or the full redirect URL) and saves the token. Codes are PKCE-bound to the process that created the link, so they’re safe to relay through a chat.
+Credentials are [`gclientid`](https://answerdotai.github.io/gclientid/)’s job. It creates your Google Cloud project, consent configuration, and OAuth clients, stores one token per account and client, and loads, refreshes, and re-authorizes those tokens. fastgws depends on it and re-exports its token functions, so `oauth_creds` here is gclientid’s `oauth_creds`. This page shows how fastgws uses the credentials; read the gclientid README for provisioning, presets, the stored files, and re-authorization.
 
 API keys are useful for public Google APIs that support key-based access, such as Places. You can pass `api_key=...` directly or set `GOOGLE_API_KEY` or `GWS_API_KEY` in the environment.
 
+### Use a gclientid token
+
+Set up once with `gclientid` (see “Quick start” in the gclientid README), then authorize an account, choosing a preset or explicit scopes (“Access presets” there):
+
+``` sh
+gclientid-auth me@example.com --preset google-apps
+```
+
+Then pass the account name instead of constructing a path:
+
 ``` python
-creds = oauth_creds(scopes=['https://www.googleapis.com/auth/calendar',
-                            'https://www.googleapis.com/auth/documents',
-                            'https://www.googleapis.com/auth/drive.readonly',
-                            'https://www.googleapis.com/auth/gmail.readonly'])
+creds = await oauth_creds(account='me@example.com')
+```
+
+The token records its granted scopes, so `scopes` is optional; when supplied, `oauth_creds` verifies that the token covers them. Access tokens are refreshed back into the same file during API calls, including after a 401. When a token is missing, lacks the scopes, or can no longer be refreshed, what happens is a gclientid setting: by default on a machine where `gclientid` ran, it re-authorizes in your browser and returns; otherwise it raises an error naming the `gclientid-auth` command to run (“Automatic re-authorization” in the gclientid README). Pass `token_path=` instead for an authorized-user file stored elsewhere.
+
+`internal=True` and `desktop=True` select the tokens of gclientid’s Internal-audience and Desktop clients (“Stored files” in the gclientid README):
+
+``` python
+creds = await oauth_creds(account="me@example.com", internal=True)
+creds = await oauth_creds(account="me@example.com", desktop=True)
+```
+
+``` python
+scopes = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/documents',
+    'https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/gmail.readonly']
+creds = await oauth_creds(account='me@example.com', scopes=scopes)
 ```
 
 <b>Auth complete</b>
@@ -57,7 +75,7 @@ doc = await docs.documents.create(title='fastgws test doc')
 doc
 ```
 
-<div class="prose" markdown="1">
+<div class="prose" data-markdown="1">
 
 ``` python
 GWSObject(title='fastgws test doc', documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', body=1, documentStyle=11, namedStyles=1, tabs=1)
@@ -67,11 +85,11 @@ GWSObject(title='fastgws test doc', documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJ
 
 ``` python
 await docs.documents.batch_update(document_id=doc.documentId,
-                                  requests=[{'insertText': {'location': {'index': 1},
-                                             'text': 'Hello from fastgws\n'}}])
+    requests=[{'insertText': {'location': {'index': 1},
+        'text': 'Hello from fastgws\n'}}])
 ```
 
-<div class="prose" markdown="1">
+<div class="prose" data-markdown="1">
 
 ``` python
 GWSObject(documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', replies=1, writeControl=1)
@@ -109,7 +127,7 @@ msgs = await gmail.users.messages.list(user_id='me', max_results=10)
 msgs
 ```
 
-<div class="prose" markdown="1">
+<div class="prose" data-markdown="1">
 
 ``` python
 GWSObject(messages=10)
@@ -117,18 +135,35 @@ GWSObject(messages=10)
 
 </div>
 
+List operations expose `pages`. The iterator forwards each `nextPageToken` as `page_token` and stops after the final page.
+
+Every operation also exposes `batch` when its Google discovery document advertises a batch endpoint. Pass dictionaries containing the same arguments accepted by the operation; results preserve call order. fastgws uses Google’s recommended 50-call chunks by default (the protocol maximum is 100), and `return_exceptions=True` returns a structured `APIError` in the corresponding position instead of raising it.
+
+``` python
+messages = await gmail.users.messages.get.batch([
+    dict(user_id='me', id=mid, format='minimal', fields='id,labelIds')
+    for mid in message_ids
+])
+```
+
+Ordinary and batched operations retry transient network failures, 429s, 5xx responses, and Google’s retryable 403 rate-limit reasons with truncated exponential backoff, jitter, and `Retry-After` support. A batch retries only its failed parts. Credentials refresh automatically after a 401. Clients request gzip responses by default; use Google’s global `fields` argument, as above, to request a partial response when the complete resource is unnecessary.
+
+``` python
+pages = gmail.users.messages.list.pages(user_id='me', max_results=10)
+first_page = await anext(pages)
+first_page
+```
+
 Use Calendar to create, update, delete, and search events.
 
 ``` python
 calendar = Calendar(creds=creds)
-event = await calendar.events.insert(calendar_id='primary',
-                                    summary='fastgws test event',
-                                    start={'dateTime': '2030-01-01T09:00:00Z'},
-                                    end={'dateTime': '2030-01-01T09:30:00Z'})
+event = await calendar.events.insert(calendar_id='primary', summary='fastgws test event', start={'dateTime': '2030-01-01T09:00:00Z'},
+    end={'dateTime': '2030-01-01T09:30:00Z'})
 event
 ```
 
-<div class="prose" markdown="1">
+<div class="prose" data-markdown="1">
 
 ``` python
 Event(id='u99k6q861u35h6mrmejdrgc0gg', summary='fastgws test event', kind='calendar#event', creator=2, organizer=2, start=2, end=2, reminders=1)
@@ -138,7 +173,7 @@ Event(id='u99k6q861u35h6mrmejdrgc0gg', summary='fastgws test event', kind='calen
 
 ``` python
 events = await calendar.events.list(calendar_id='primary', q='fastgws test event',
-                                    max_results=10, single_events=True, order_by='startTime')
+    max_results=10, single_events=True, order_by='startTime')
 events, events['items'][0]
 ```
 
@@ -155,15 +190,17 @@ Use API-key services the same way. Places can run with an API key instead of OAu
 
 ``` python
 from IPython.display import Markdown
+```
 
+``` python
 places = Places()
 res = await places.places.search_text(text_query='coffee near San Francisco',
-                                      _headers={'X-Goog-FieldMask':'places.displayName,places.formattedAddress,places.location,places.googleMapsUri'})
+    _headers={'X-Goog-FieldMask':'places.displayName,places.formattedAddress,places.location,places.googleMapsUri'})
 p = res.places[0]
 Markdown(f'[{p.displayName.text}]({p.googleMapsUri})')
 ```
 
-<div class="prose" markdown="1">
+<div class="prose" data-markdown="1">
 
 [787 Coffee](https://maps.google.com/?cid=978151600972640730&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA)
 
@@ -171,14 +208,52 @@ Markdown(f'[{p.displayName.text}]({p.googleMapsUri})')
 
 fastgws can also create service clients dynamically from Google’s discovery index. If Google publishes a discovery document for a service, you can usually import that service by name, for example `from fastgws import Sheets`, then use it with the same `creds`, `token`, or `api_key` arguments shown above.
 
+Services outside the central discovery index can be loaded from their own discovery URL. The discovery request uses the same credentials, token, API key, quota project, and custom headers as the resulting client.
+
+``` python
+drive = await GWSApi.from_discovery_url(
+    'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+    creds=creds)
+```
+
+## Workspace Add-ons
+
+[`WorkspaceAddons`](https://answerdotai.github.io/fastgws/addons.html#workspaceaddons) manages HTTP add-on deployments through the documented REST endpoints. It does not fetch the Workspace Add-ons discovery document. `deploy` creates or replaces one stable deployment ID, and `ensure_installed` installs it for the credentials’ user only when needed. After replacing a development deployment’s callback configuration, use `reinstall` so host applications pick up the change.
+
+``` python
+from fastgws import WorkspaceAddons
+
+addons = WorkspaceAddons('my-project', creds)
+auth = await addons.authorization()
+deployment = await addons.deploy('dev', manifest)
+status = await addons.ensure_installed('dev')
+```
+
+Create one client per tester because test installation belongs to the authenticated user.
+
+## Workspace administration
+
+[`WorkspaceAdmin`](https://answerdotai.github.io/fastgws/admin.html#workspaceadmin) provides explicit user lifecycle operations over the Admin Directory and Enterprise License Manager APIs. Creation does not imply licensing: domains can auto-assign licences by organizational unit, or callers can use `assign_license` with the domain’s product SKU.
+
+``` python
+from fastgws import WorkspaceAdmin
+
+admin = WorkspaceAdmin(creds)
+user = await admin.create_user('new@example.com', 'New', 'User', password,
+                               org_unit_path='/Internal')
+await admin.assign_license(user.primaryEmail, 'workspace-sku-id')
+```
+
+Suspension, restoration, licence removal, and deletion are separate calls, so automated setup does not hide destructive lifecycle changes.
+
 ## PySkill support
 
 `fastgws` includes a PySkill for agents working inside solveit. Load `fastgws.skill` when a task needs access to Google Workspace or Google APIs through the base [`GWSApi`](https://answerdotai.github.io/fastgws/core.html#gwsapi) client.
 
-The skill exposes [`GWSApi`](https://answerdotai.github.io/fastgws/core.html#gwsapi), [`GWSObject`](https://answerdotai.github.io/fastgws/core.html#gwsobject), `oauth_creds`, and `svc_acct_creds`, and allows generated Google API operations through [`GWSOpFunc`](https://answerdotai.github.io/fastgws/core.html#gwsopfunc). Agents should normally load OAuth credentials with `interactive=False`, which means they can only use scopes the user has already authorized manually.
+The skill exposes [`GWSApi`](https://answerdotai.github.io/fastgws/core.html#gwsapi), [`GWSObject`](https://answerdotai.github.io/fastgws/core.html#gwsobject), `oauth_creds`, and `svc_acct_creds`, and allows generated Google API operations through [`GWSOpFunc`](https://answerdotai.github.io/fastgws/core.html#gwsopfunc). Agents load an account’s existing gclientid token; authorization remains an explicit user action through `gclientid-auth`.
 
 ``` python
-creds = oauth_creds(scopes=['https://www.googleapis.com/auth/gmail.readonly'], interactive=False)
+creds = await oauth_creds(account='me@example.com', scopes=['https://www.googleapis.com/auth/gmail.readonly'])
 gmail = GWSApi('gmail', creds=creds)
 msgs = await gmail.users.messages.list(user_id='me', max_results=10)
 ```
