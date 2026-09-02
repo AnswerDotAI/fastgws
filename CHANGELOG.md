@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.10
+
+### New Features
+
+- Delegate OAuth token handling to gclientid: drop local token code from fastgws.auth and re-export gclientid.creds functions ([#20](https://github.com/AnswerDotAI/fastgws/issues/20))
+
+
 ## 0.2.9
 
 ### New Features
@@ -32,7 +39,7 @@
 
 ### New Features
 
-- Add split OAuth flow (auth_url/finish_auth) for agent-friendly auth ([#13](https://github.com/AnswerDotAI/fastgws/pull/13)), thanks to [@ncoop57](https://github.com/ncoop57)
+- Add split OAuth flow (`auth_url`/`finish_auth`) for agent-friendly auth ([#13](https://github.com/AnswerDotAI/fastgws/pull/13)), thanks to [@ncoop57](https://github.com/ncoop57)
 - Pin version
 
 
