@@ -75,7 +75,7 @@ doc = await docs.documents.create(title='fastgws test doc')
 doc
 ```
 
-<div class="prose" data-markdown="1">
+<div class="prose" markdown="1">
 
 ``` python
 GWSObject(title='fastgws test doc', documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', body=1, documentStyle=11, namedStyles=1, tabs=1)
@@ -89,7 +89,7 @@ await docs.documents.batch_update(document_id=doc.documentId,
         'text': 'Hello from fastgws\n'}}])
 ```
 
-<div class="prose" data-markdown="1">
+<div class="prose" markdown="1">
 
 ``` python
 GWSObject(documentId='1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', replies=1, writeControl=1)
@@ -127,7 +127,7 @@ msgs = await gmail.users.messages.list(user_id='me', max_results=10)
 msgs
 ```
 
-<div class="prose" data-markdown="1">
+<div class="prose" markdown="1">
 
 ``` python
 GWSObject(messages=10)
@@ -146,7 +146,7 @@ messages = await gmail.users.messages.get.batch([
 ])
 ```
 
-Ordinary and batched operations retry transient network failures, 429s, 5xx responses, and Google’s retryable 403 rate-limit reasons with truncated exponential backoff, jitter, and `Retry-After` support. A batch retries only its failed parts. Credentials refresh automatically after a 401. Clients request gzip responses by default; use Google’s global `fields` argument, as above, to request a partial response when the complete resource is unnecessary.
+Ordinary and batched operations retry transient network failures, 429s, 5xx responses, and Google’s retryable 403 rate-limit reasons with truncated exponential backoff, jitter, and `Retry-After` support. A Google quota error that names its window, such as a per-minute cap, is retried once that window rolls over; a window longer than `max_wait` (5 mins by default) raises at once. A batch retries only its failed parts. Credentials refresh automatically after a 401. Clients request gzip responses by default; use Google’s global `fields` argument, as above, to request a partial response when the complete resource is unnecessary.
 
 ``` python
 pages = gmail.users.messages.list.pages(user_id='me', max_results=10)
@@ -163,7 +163,7 @@ event = await calendar.events.insert(calendar_id='primary', summary='fastgws tes
 event
 ```
 
-<div class="prose" data-markdown="1">
+<div class="prose" markdown="1">
 
 ``` python
 Event(id='u99k6q861u35h6mrmejdrgc0gg', summary='fastgws test event', kind='calendar#event', creator=2, organizer=2, start=2, end=2, reminders=1)
@@ -200,7 +200,7 @@ p = res.places[0]
 Markdown(f'[{p.displayName.text}]({p.googleMapsUri})')
 ```
 
-<div class="prose" data-markdown="1">
+<div class="prose" markdown="1">
 
 [787 Coffee](https://maps.google.com/?cid=978151600972640730&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA)
 

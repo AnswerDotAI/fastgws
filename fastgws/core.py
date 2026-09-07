@@ -23,7 +23,7 @@ from fastspec.spec import SpecParser
 from fastspec.oapi import AsyncTransport, OpFunc
 from fastcore.apisurface import mk_groups
 
-import asyncio, httpx, httpx2, json, os, random
+import asyncio, httpx, httpx2, json, os, random, time
 
 # %% ../nbs/00_core.ipynb #bcf1c22a
 class GWSObject(AttrDict):
@@ -74,13 +74,34 @@ def _retry_after(exc):
         return max(0, (when-datetime.now(timezone.utc)).total_seconds())
     except (TypeError, ValueError, OverflowError): return
 
+# %% ../nbs/00_core.ipynb #6ebe502f
+_period_secs = dict(s=1, min=60, h=3600, d=86400)
 
+def _error_info(x):
+    "Metadata of the first `google.rpc.ErrorInfo` detail in a Google error body, else None"
+    if isinstance(x, dict):
+        if str(x.get('@type', '')).endswith('google.rpc.ErrorInfo'): return x.get('metadata', {})
+        return first(filter(None, (_error_info(v) for v in x.values())))
+    if isinstance(x, (list,tuple)): return first(filter(None, (_error_info(v) for v in x)))
 
+def _quota_window(exc):
+    "`(period, wait)` for the quota window a Google rate-limit error names: its length in seconds, and seconds until it rolls over; None when the error names no window"
+    err = exc if isinstance(exc, APIError) else exc.api_error()
+    meta = _error_info(err.raw) or {}
+    m = re.match(r'\d+/(\d*)(s|min|h|d)/', meta.get('quota_unit', ''))
+    if not m or 'window_start_time' not in meta: return
+    period = int(m.group(1) or 1) * _period_secs[m.group(2)]
+    return period, max(0, float(meta['window_start_time']) + period - time.time()) + 1
 
 # %% ../nbs/00_core.ipynb #15c829f6
-def _retry_delay(exc, attempt, base, max_backoff):
+def _retry_delay(exc, attempt, base, max_backoff, max_wait):
+    "Seconds to wait before retrying `exc`: `Retry-After`, else the rest of its quota window, else backoff; None when that window is longer than `max_wait`"
     delay = _retry_after(exc)
-    return delay if delay is not None else min(max_backoff, base*2**attempt) + random.uniform(0, base)
+    if delay is not None: return delay
+    window = _quota_window(exc)
+    if window is None: return min(max_backoff, base*2**attempt) + random.uniform(0, base)
+    period,wait = window
+    return wait if period <= max_wait else None
 
 
 # %% ../nbs/00_core.ipynb #ceb0c83c
@@ -93,7 +114,7 @@ class GWSTransport(AsyncTransport):
         if self.creds: self.base_headers |= auth_headers(self.creds)
         return super()._request_headers(headers, files=files)
 
-    async def request(self, *args, raw=False, n_retries=5, base=1.0, max_backoff=64.0, **kwargs):
+    async def request(self, *args, raw=False, n_retries=5, base=1.0, max_backoff=64.0, max_wait=300.0, **kwargs):
         if n_retries < 1: raise ValueError("n_retries must be at least 1")
         refreshed = False
         for attempt in range(n_retries):
@@ -108,7 +129,10 @@ class GWSTransport(AsyncTransport):
                 if do_refresh:
                     refreshed = True
                     await refresh_creds(self.creds)
-                else: await asyncio.sleep(_retry_delay(e, attempt, base, max_backoff))
+                else:
+                    delay = _retry_delay(e, attempt, base, max_backoff, max_wait)
+                    if delay is None: raise
+                    await asyncio.sleep(delay)
 
 
 # %% ../nbs/00_core.ipynb #18bfc7d0
@@ -197,7 +221,7 @@ async def _batch_once(self:GWSOpFunc, calls):
 
 # %% ../nbs/00_core.ipynb #63a9b287
 @patch
-async def _batch_chunk(self:GWSOpFunc, calls, n_retries, base, max_backoff):
+async def _batch_chunk(self:GWSOpFunc, calls, n_retries, base, max_backoff, max_wait):
     results,pending,refreshed = [None]*len(calls),dict(enumerate(calls)),False
     for attempt in range(n_retries):
         indexes = list(pending)
@@ -207,32 +231,29 @@ async def _batch_chunk(self:GWSOpFunc, calls, n_retries, base, max_backoff):
             if not isinstance(value, APIError): results[i] = value
             elif value.status_code == 401 and self.client.creds and not refreshed and attempt < n_retries-1:
                 retry[i],refresh = pending[i],True
-            elif value.retryable and attempt < n_retries-1:
+            elif value.retryable and attempt < n_retries-1 and (delay:=_retry_delay(value, attempt, base, max_backoff, max_wait)) is not None:
                 retry[i] = pending[i]
-                waits.append(_retry_after(value))
+                waits.append(delay)
             else: results[i] = value
         if not retry: break
         if refresh:
             refreshed = True
             await refresh_creds(self.client.creds)
-        else:
-            delays = [v for v in waits if v is not None]
-            delay = max(delays) if delays else min(max_backoff, base*2**attempt) + random.uniform(0, base)
-            await asyncio.sleep(delay)
+        else: await asyncio.sleep(max(waits))
         pending = retry
     return results
 
 
 # %% ../nbs/00_core.ipynb #2c842525
 @patch
-async def batch(self:GWSOpFunc, calls, chunk=50, return_exceptions=False, n_retries=5, base=1.0, max_backoff=64.0):
+async def batch(self:GWSOpFunc, calls, chunk=50, return_exceptions=False, n_retries=5, base=1.0, max_backoff=64.0, max_wait=300.0):
     "Run dictionaries of arguments for this operation through Google's discovery-advertised HTTP batch endpoint"
     if not self.batch_url: raise ValueError('This Google service does not advertise a batch endpoint')
     if not 1 <= chunk <= 100: raise ValueError('chunk must be between 1 and 100')
     if n_retries < 1: raise ValueError('n_retries must be at least 1')
     calls = list(calls)
     results = []
-    for i in range(0, len(calls), chunk): results.extend(await self._batch_chunk(calls[i:i+chunk], n_retries, base, max_backoff))
+    for i in range(0, len(calls), chunk): results.extend(await self._batch_chunk(calls[i:i+chunk], n_retries, base, max_backoff, max_wait))
     if not return_exceptions:
         error = first(x for x in results if isinstance(x, APIError))
         if error: raise error
