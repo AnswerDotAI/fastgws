@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 0.2.11
+
+### New Features
+
+- Rework retry delays to honor RetryInfo and quota windows with `max_wait` cap, and rebuild HTTP batch encoding on h11 and EmailMessage ([#22](https://github.com/AnswerDotAI/fastgws/issues/22))
+
+
 ## 0.2.10
 
 ### New Features
