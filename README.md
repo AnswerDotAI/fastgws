@@ -146,7 +146,9 @@ messages = await gmail.users.messages.get.batch([
 ])
 ```
 
-Ordinary and batched operations retry transient network failures, 429s, 5xx responses, and Google’s retryable 403 rate-limit reasons with truncated exponential backoff, jitter, and `Retry-After` support. A batch retries only its failed parts. Credentials refresh automatically after a 401. Clients request gzip responses by default; use Google’s global `fields` argument, as above, to request a partial response when the complete resource is unnecessary.
+Ordinary and batched operations retry transient network failures, 429s, 5xx responses, and Google’s retryable 403 rate-limit reasons. Delays use `Retry-After`, then `RetryInfo`, then the reported quota window, then exponential backoff with jitter. `max_wait` limits each wait to 300 seconds by default. A longer required delay stops retries and preserves the original error. `batch` accepts these retry options for both the outer HTTP request and its failed parts. Ordinary transport calls accept them through [`GWSTransport.request`](https://answerdotai.github.io/fastgws/core.html#gwstransport.request).
+
+A batch retries only its failed parts. Credentials refresh automatically after a 401. Credential refresh does not skip rate-limit waits. Clients request gzip responses by default. Use Google’s global `fields` argument, as above, to request a partial response when the complete resource is unnecessary.
 
 ``` python
 pages = gmail.users.messages.list.pages(user_id='me', max_results=10)
