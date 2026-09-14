@@ -12,9 +12,9 @@ gclientid-auth me@example.com --preset google-apps
 creds = await oauth_creds(account='me@example.com')
 ```
 
-Pass `scopes=` when the task wants fastgws to verify that the saved token includes a particular set. `token_path=` loads an authorized-user JSON file stored somewhere else. What happens when the token is missing, insufficient, or can no longer be refreshed is gclientid's decision: see "Automatic re-authorization" in the gclientid README, and the Gotchas below.
+Pass `scopes=` to verify that the saved token includes the required scopes. Pass `token_path=` to load an authorized-user JSON file from another location. gclientid controls re-authorization when a token is missing, lacks required scopes, or cannot be refreshed. See "Automatic re-authorization" in the gclientid README and the Gotchas below.
 
-Access tokens refresh automatically during API calls (including after a 401), and the fresh token is saved back to the token file, so there is no need to re-run `oauth_creds` when a token expires.
+You do not need to rerun `oauth_creds` when an access token expires. fastgws refreshes access tokens automatically during API calls, including after a 401. It saves the refreshed token back to the token file.
 
 To sign out, `await logout(account='me@example.com')` revokes the saved grant at Google and deletes the stored token (a no-op if none is saved).
 
@@ -91,7 +91,9 @@ Use Drive search queries with `drive.files.list(q=...)`. Ask only for the fields
 files = await drive.files.list(q="name contains 'report' and trashed=false", page_size=10)
 ```
 
-A Drive method that accepts content has an upload twin. `drive.files.upload(media=..., name=...)` sends bytes, a path, or a file-like with the same metadata `files.create` takes; `drive.files.update_media(file_id=..., media=...)` replaces a file's content. Uploads use Google's resumable protocol; the content is read into memory and sent in one request, so very large files are bounded by available memory.
+For each Drive method that accepts content, fastgws provides an upload method. `drive.files.upload(media=..., name=...)` accepts bytes, a path, or a file-like object, with the same metadata as `files.create`. `drive.files.update_media(file_id=..., media=...)` replaces a file's content.
+
+Uploads use Google's resumable protocol. fastgws reads the content into memory and sends it in one request. Available memory limits the upload size.
 
 # Calendar notes
 
@@ -113,7 +115,12 @@ await admin.assign_license(user.primaryEmail, sku_id)
 ```
 # Gotchas
 
-`oauth_creds` loads or refreshes stored credentials. When gclientid's store has `reauth = true` (the default on a machine where `gclientid` provisioned the client), a missing, insufficient, or unrefreshable token makes it run `gclientid-auth` in the configured browser and wait for the user; otherwise it raises an error naming that command, and the user must run it. Pass `reauth=` to force either behaviour.
+`oauth_creds` loads or refreshes stored credentials. When a token is missing, lacks required scopes, or cannot be refreshed, gclientid checks its stored `reauth` setting:
+
+- With `reauth = true`, it runs `gclientid-auth` in the configured browser and waits for the user.
+- Otherwise, it raises an error naming `gclientid-auth`. The user must run that command.
+
+The stored setting defaults to `true` on machines where `gclientid` provisioned the client. Pass `reauth=` to force either behaviour.
 
 Google APIs use many different parameter names. Inspect the specific operation with `doc(...)` before guessing. fastgws converts names to Python style, so `userId` becomes `user_id`, `maxResults` becomes `max_results`, and so on.
 
