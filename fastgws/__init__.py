@@ -10,12 +10,12 @@ from .admin import *
 from .addons import *
 from functools import cache
 
-import httpx
+import httpx2
 
 __version__ = "0.2.12"
 
 @cache
-def apis(): return httpx.get('https://discovery.googleapis.com/discovery/v1/apis').json()['items']
+def apis(): return httpx2.get('https://discovery.googleapis.com/discovery/v1/apis').json()['items']
 
 def services(): return {a['name'] for a in apis()}
 

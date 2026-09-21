@@ -25,7 +25,7 @@ from fastspec.oapi import AsyncTransport, OpFunc
 from fastcore.apisurface import mk_groups
 from fastcore.meta import delegates
 
-import asyncio, h11, httpx, httpx2, math, random, time
+import asyncio, h11, httpx2, math, random, time
 
 # %% ../nbs/00_core.ipynb #bcf1c22a
 class GWSObject(AttrDict):
@@ -344,11 +344,11 @@ class GWSApi:
     def _get_doc(self, service, version=None):
         if version: url = f'https://www.googleapis.com/discovery/v1/apis/{service}/{version}/rest'
         else:
-            apis = httpx.get('https://discovery.googleapis.com/discovery/v1/apis').json()['items']
+            apis = httpx2.get('https://discovery.googleapis.com/discovery/v1/apis').json()['items']
             api = first(a for a in apis if a['name'] == service and a.get('preferred'))
             url = api['discoveryRestUrl']
             self.version = api['version']
-        return httpx.get(url).json()
+        return httpx2.get(url).json()
 
 
 # %% ../nbs/00_core.ipynb #25a21f0f
@@ -361,7 +361,7 @@ async def from_discovery_url(cls:GWSApi, url, service=None, version=None, token=
     if quota_project: headers = {'X-Goog-User-Project': quota_project, **headers}
     if creds and not creds.valid: await refresh_creds(creds)
     hdrs = _api_headers(creds, token, api_key, headers)
-    async with httpx.AsyncClient(timeout=timeout) as client:
+    async with httpx2.AsyncClient(timeout=timeout) as client:
         response = await client.get(url, headers=hdrs)
         response.raise_for_status()
     doc = response.json()
