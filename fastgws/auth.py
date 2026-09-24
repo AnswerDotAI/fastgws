@@ -16,7 +16,7 @@ def gws_config_dir():
     return p
 
 def svc_acct_creds(sa_path=None, scopes=None, subject=None):
-    "Service account creds from config-dir `service_account.json`, optionally delegated to `subject`."
+    "Service account creds for the required `scopes`, from config-dir `service_account.json` or `sa_path`, optionally delegated to `subject`."
     if scopes is None: raise ValueError('`scopes` is required')
     sa_path = Path(ifnone(sa_path, gws_config_dir()/'service_account.json'))
     creds = service_account.Credentials.from_service_account_file(str(sa_path), scopes=scopes)

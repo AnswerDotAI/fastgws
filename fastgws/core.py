@@ -294,7 +294,7 @@ async def batch(
     max_backoff=64.0, # Maximum exponential component, in seconds
     max_wait=300.0 # Maximum individual retry wait, in seconds
 ):
-    "Run dictionaries of arguments for this operation through Google's discovery-advertised HTTP batch endpoint"
+    "Run dictionaries of arguments for this operation through Google's discovery-advertised HTTP batch endpoint, retrying only the failed parts"
     if not self.batch_url: raise ValueError('This Google service does not advertise a batch endpoint')
     if not 1 <= chunk <= 100: raise ValueError('chunk must be between 1 and 100')
     if n_retries < 1: raise ValueError('n_retries must be at least 1')
@@ -318,10 +318,19 @@ def _api_headers(creds=None, token=None, api_key=None, headers=None):
 
 # %% ../nbs/00_core.ipynb #151ae5d3
 class GWSApi:
+    "Client for one Google API, built from its discovery document, with resources as attribute groups such as `gmail.users.messages`"
     service = None
 
-    def __init__(self, service=None, version=None, token=None, creds=None,
-        api_key=None, headers=None, timeout=60.0, doc=None):
+    def __init__(self,
+        service=None, # Discovery API name, such as 'gmail', 'calendar', 'drive', 'docs', or 'sheets'
+        version=None, # API version, defaulting to the service's preferred version
+        token=None, # OAuth access token, as an alternative to `creds`
+        creds=None, # google-auth credentials, such as from `oauth_creds` or `svc_acct_creds`
+        api_key=None, # API key, defaulting to `GOOGLE_API_KEY` or `GWS_API_KEY` when there are no `creds` or `token`
+        headers=None, # Extra request headers
+        timeout=60.0, # Request timeout in seconds
+        doc=None, # Discovery document to use, instead of fetching it
+    ):
         service = ifnone(service, self.service)
         if service is None: raise ValueError('`service` is required')
         self.service,self.version = service,version
@@ -374,7 +383,7 @@ async def from_discovery_url(cls:GWSApi, url, service=None, version=None, token=
 # %% ../nbs/00_core.ipynb #b931d142
 @patch
 async def pages(self:GWSOpFunc, *args, **kwargs):
-    "Yield every page from a Google list operation"
+    "Yield every page from a Google list operation, passing each `nextPageToken` on as `page_token`"
     while True:
         page = await self(*args, **kwargs)
         yield page

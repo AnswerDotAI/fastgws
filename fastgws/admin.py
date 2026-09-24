@@ -15,7 +15,7 @@ from .core import GWSApi
 
 # %% ../nbs/01_admin.ipynb #00a7bf29
 class WorkspaceAdmin:
-    "High-level Workspace user and license administration"
+    "High-level Workspace user and license administration. `creds` need the `admin.directory.user` and `apps.licensing` scopes."
     def __init__(self, creds):
         self.directory = GWSApi('admin', version='directory_v1', creds=creds)
         self.licensing = GWSApi('licensing', version='v1', creds=creds)
