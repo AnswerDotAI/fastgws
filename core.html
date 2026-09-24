@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Async Google Workspace clients built from Google’s Discovery API.">
+
+<title>core – fastgws</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-f2788e636de456f6409e966386820849.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="core – fastgws">
+<meta property="og:description" content="Async Google Workspace clients built from Google’s Discovery API.">
+<meta property="og:site_name" content="fastgws">
+<meta name="twitter:title" content="core – fastgws">
+<meta name="twitter:description" content="Async Google Workspace clients built from Google’s Discovery API.">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">fastgws</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./core.html">core</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">fastgws</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">core</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./admin.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">admin</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./addons.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">addons</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#retry-handling" id="toc-retry-handling" class="nav-link active" data-scroll-target="#retry-handling">Retry handling</a></li>
+  <li><a href="#http-batching" id="toc-http-batching" class="nav-link" data-scroll-target="#http-batching">HTTP batching</a></li>
+  <li><a href="#discovery-clients" id="toc-discovery-clients" class="nav-link" data-scroll-target="#discovery-clients">Discovery clients</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/answerdotai/fastgws/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div><div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="core.html.md"><i class="bi bi-file-code"></i>Markdown</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">core</h1>
+</div>
+
+<div>
+  <div class="description">
+    Async Google Workspace clients built from Google’s Discovery API.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<div id="2372aaea" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.562806+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.564249+00:00&quot;,&quot;total&quot;:0.0014461070000066911}}" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastcore.test <span class="im">import</span> <span class="op">*</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastspec.spec <span class="im">import</span> OpSpec</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> google.oauth2.credentials <span class="im">import</span> Credentials</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="4ba20396" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.568839+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.718121+00:00&quot;,&quot;total&quot;:0.14928665499999738}}" data-execution_count="4">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L46" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="g2obj" class="level3">
+<h3 class="anchored" data-anchor-id="g2obj">g2obj</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> g2obj(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    x, gcls</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</div>
+<div id="d62b527a" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.718295+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.723091+00:00&quot;,&quot;total&quot;:0.0047999840000017}}" data-execution_count="5">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L39" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gclasses" class="level3">
+<h3 class="anchored" data-anchor-id="gclasses">gclasses</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> gclasses(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    doc</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</div>
+<div id="20330058" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.723243+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.727355+00:00&quot;,&quot;total&quot;:0.004115552000001799}}" data-execution_count="6">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L31" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwsobject" class="level3">
+<h3 class="anchored" data-anchor-id="gwsobject">GWSObject</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> GWSObject(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args, <span class="op">**</span>kwargs</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em><code>dict</code> subclass that also provides access to keys as attrs, and has a pretty markdown repr</em></p>
+</section>
+</div>
+<p><a href="https://answerdotai.github.io/fastgws/core.html#gwsobject"><code>GWSObject</code></a> recursively wraps Google API responses while retaining concise representations for common resource fields.</p>
+<div id="7143557b" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>files <span class="op">=</span> g2obj({<span class="st">'files'</span>:[<span class="bu">dict</span>(<span class="bu">id</span><span class="op">=</span><span class="st">'report'</span>, name<span class="op">=</span><span class="st">'Quarterly report'</span>, owners<span class="op">=</span>[{<span class="st">'displayName'</span>:<span class="st">'Alex'</span>}])]}, {})</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>test_eq(files.files[<span class="dv">0</span>].owners[<span class="dv">0</span>].displayName, <span class="st">'Alex'</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>files.files[<span class="dv">0</span>], files.files[<span class="dv">0</span>].owners[<span class="dv">0</span>].displayName</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>(GWSObject(id='report', name='Quarterly report', owners=1), 'Alex')</code></pre>
+</div>
+</div>
+<section id="retry-handling" class="level2">
+<h2 class="anchored" data-anchor-id="retry-handling">Retry handling</h2>
+<p>Google returns legacy reasons in <code>error.errors</code> and structured reasons in <code>ErrorInfo</code> entries in <code>error.details</code>. These reasons identify retryable 403 rate-limit errors. Other failures retain the transport’s retry classification.</p>
+<div id="99fe783b" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>rate_limited <span class="op">=</span> APIError(<span class="st">'Quota exceeded'</span>, status_code<span class="op">=</span><span class="dv">403</span>, raw<span class="op">=</span>{<span class="st">'error'</span>:{<span class="st">'errors'</span>:[{<span class="st">'reason'</span>:<span class="st">'userRateLimitExceeded'</span>}]}})</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>forbidden <span class="op">=</span> APIError(<span class="st">'Permission denied'</span>, status_code<span class="op">=</span><span class="dv">403</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>test_eq((_retryable(rate_limited), _retryable(forbidden)), (<span class="va">True</span>, <span class="va">False</span>))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>_retryable(rate_limited), _retryable(forbidden)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>(True, False)</code></pre>
+</div>
+</div>
+<p><code>Retry-After</code> accepts a number of seconds or an HTTP date. This date is 12 seconds after the supplied current time. Invalid values do not supply a delay.</p>
+<div id="5ab75c77" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>dated_response <span class="op">=</span> httpx2.Response(<span class="dv">503</span>, headers<span class="op">=</span>{<span class="st">'Retry-After'</span>:<span class="st">'Tue, 14 Nov 2023 22:13:32 GMT'</span>})</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>dated_error <span class="op">=</span> APIError(<span class="st">'Service unavailable'</span>, status_code<span class="op">=</span><span class="dv">503</span>, response<span class="op">=</span>dated_response)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_after(dated_error, now<span class="op">=</span><span class="dv">1700000000</span>), <span class="dv">12</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>_retry_after(dated_error, now<span class="op">=</span><span class="dv">1700000000</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>12.0</code></pre>
+</div>
+</div>
+<p><code>RetryInfo.retryDelay</code> is a duration in seconds, including fractional seconds.</p>
+<div id="6ccbe1df" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>retry_info <span class="op">=</span> APIError(<span class="st">'Try again later'</span>, status_code<span class="op">=</span><span class="dv">429</span>, raw<span class="op">=</span>{<span class="st">'error'</span>:{<span class="st">'details'</span>:[{</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">'@type'</span>:<span class="st">'type.googleapis.com/google.rpc.RetryInfo'</span>, <span class="st">'retryDelay'</span>:<span class="st">'2.5s'</span>}]}})</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_info(retry_info), <span class="fl">2.5</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>_retry_info(retry_info)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>2.5</code></pre>
+</div>
+</div>
+<p>A quota error can name its accounting window in <code>ErrorInfo.metadata</code>. Here the minute started 30 seconds ago. The retry waits for the remaining 30 seconds plus a one-second margin.</p>
+<div id="2e902c31" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>quota <span class="op">=</span> APIError(<span class="st">'Quota exceeded'</span>, status_code<span class="op">=</span><span class="dv">403</span>, raw<span class="op">=</span>{<span class="st">'error'</span>:{<span class="st">'details'</span>:[{</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">'@type'</span>:<span class="st">'type.googleapis.com/google.rpc.ErrorInfo'</span>, <span class="st">'reason'</span>:<span class="st">'RATE_LIMIT_EXCEEDED'</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'metadata'</span>:{<span class="st">'quota_unit'</span>:<span class="st">'1/min/</span><span class="sc">{project}</span><span class="st">/</span><span class="sc">{user}</span><span class="st">'</span>, <span class="st">'window_start_time'</span>:<span class="st">'1700000000'</span>}}]}})</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>test_eq(_quota_wait(quota, now<span class="op">=</span><span class="dv">1700000030</span>), <span class="dv">31</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>_quota_wait(quota, now<span class="op">=</span><span class="dv">1700000030</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>31.0</code></pre>
+</div>
+</div>
+<p>Retry delays use <code>Retry-After</code>, then <code>RetryInfo.retryDelay</code>, then quota-window metadata. If none supplies a valid delay, retries use exponential backoff with jitter. <code>max_wait</code> defaults to 300 seconds and applies to every delay source. Longer delays stop retries without shortening the required wait.</p>
+<div id="1250aa1e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>wait <span class="op">=</span> _retry_delay(quota, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">64</span>, now<span class="op">=</span><span class="dv">1700000030</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>test_eq(wait, <span class="dv">31</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>test_is(_retry_delay(quota, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">64</span>, max_wait<span class="op">=</span><span class="dv">30</span>, now<span class="op">=</span><span class="dv">1700000030</span>), <span class="va">None</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>wait</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>31.0</code></pre>
+</div>
+</div>
+<p>Without a timing hint, a retryable error uses exponential backoff. A permission error without a rate-limit reason is not retryable.</p>
+<div id="51d36c1b" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>unavailable <span class="op">=</span> APIError(<span class="st">'Service unavailable'</span>, status_code<span class="op">=</span><span class="dv">503</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>test_eq((_retryable(unavailable), _retryable(forbidden)), (<span class="va">True</span>, <span class="va">False</span>))</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>backoff <span class="op">=</span> _retry_delay(unavailable, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">64</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="dv">4</span> <span class="op">&lt;=</span> backoff <span class="op">&lt;=</span> <span class="dv">5</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>backoff</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>4.694767496006301</code></pre>
+</div>
+</div>
+<p>An explicit <code>Retry-After</code> takes precedence over backoff. A wait limit rejects a longer delay instead of retrying early.</p>
+<div id="2cad837c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>retry_response <span class="op">=</span> httpx2.Response(<span class="dv">503</span>, headers<span class="op">=</span>{<span class="st">'Retry-After'</span>:<span class="st">'12'</span>})</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>retry_error <span class="op">=</span> APIError(<span class="st">'Service unavailable'</span>, status_code<span class="op">=</span><span class="dv">503</span>, response<span class="op">=</span>retry_response)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_delay(retry_error, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">64</span>), <span class="dv">12</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>test_is(_retry_delay(retry_error, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">64</span>, max_wait<span class="op">=</span><span class="dv">10</span>), <span class="va">None</span>)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>_retry_delay(retry_error, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">64</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>12.0</code></pre>
+</div>
+</div>
+<p><a href="https://answerdotai.github.io/fastgws/core.html#_retry_action"><code>_retry_action</code></a> chooses <code>wait</code>, <code>refresh</code>, or <code>stop</code> without performing the action. Its second result is the delay for <code>wait</code>, otherwise <code>None</code>. The 12-second server delay is rejected when it exceeds <code>max_wait</code> or no attempts remain.</p>
+<div id="7a224cf8" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_action(retry_error, <span class="dv">0</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">False</span>), (<span class="st">'wait'</span>, <span class="dv">12</span>))</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_action(retry_error, <span class="dv">0</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">False</span>, max_wait<span class="op">=</span><span class="dv">10</span>), (<span class="st">'stop'</span>, <span class="va">None</span>))</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_action(retry_error, <span class="dv">2</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">False</span>), (<span class="st">'stop'</span>, <span class="va">None</span>))</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>_retry_action(retry_error, <span class="dv">0</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>('wait', 12.0)</code></pre>
+</div>
+</div>
+<p>A 401 permits a credential refresh only when credentials are available and no refresh has already been attempted. Exhausting the request attempts takes precedence over refreshing.</p>
+<div id="b794f35c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>unauthorized <span class="op">=</span> APIError(<span class="st">'Unauthorized'</span>, status_code<span class="op">=</span><span class="dv">401</span>)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_action(unauthorized, <span class="dv">0</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">True</span>), (<span class="st">'refresh'</span>, <span class="va">None</span>))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_action(unauthorized, <span class="dv">1</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">False</span>), (<span class="st">'stop'</span>, <span class="va">None</span>))</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>test_eq(_retry_action(unauthorized, <span class="dv">2</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">True</span>), (<span class="st">'stop'</span>, <span class="va">None</span>))</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>_retry_action(unauthorized, <span class="dv">0</span>, <span class="dv">3</span>, can_refresh<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>('refresh', None)</code></pre>
+</div>
+</div>
+<div id="22ff4639" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.744345+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.747098+00:00&quot;,&quot;total&quot;:0.002755317000008972}}" data-execution_count="13">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L132" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwstransport" class="level3">
+<h3 class="anchored" data-anchor-id="gwstransport">GWSTransport</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> GWSTransport(</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args, gcls:NoneType<span class="op">=</span><span class="va">None</span>, creds:NoneType<span class="op">=</span><span class="va">None</span>, <span class="op">**</span>kwargs</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Thin async transport over httpx2. By default each request gets a fresh client, so nothing is tied to an event loop; pass <code>client=</code> to use a persistent client that you manage (and close via <code>aclose</code>).</em></p>
+</section>
+</div>
+<p><a href="https://answerdotai.github.io/fastgws/core.html#gwstransport"><code>GWSTransport</code></a> reads the current credential token when constructing request headers. Updating the credentials changes the next request’s authorization header. These example tokens are not sent to Google.</p>
+<div id="000dc18b" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>example_creds <span class="op">=</span> Credentials(<span class="st">'example-token'</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>authed_transport <span class="op">=</span> GWSTransport(creds<span class="op">=</span>example_creds)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>test_eq(authed_transport._request_headers()[<span class="st">'Authorization'</span>], <span class="st">'Bearer example-token'</span>)</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>example_creds.token <span class="op">=</span> <span class="st">'replacement-token'</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>auth_header <span class="op">=</span> authed_transport._request_headers()[<span class="st">'Authorization'</span>]</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>test_eq(auth_header, <span class="st">'Bearer replacement-token'</span>)</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>auth_header</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>'Bearer replacement-token'</code></pre>
+</div>
+</div>
+<div id="848eac12" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.749594+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.754007+00:00&quot;,&quot;total&quot;:0.0044162699999930055}}" data-execution_count="15">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L144" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwstransport.request" class="level3">
+<h3 class="anchored" data-anchor-id="gwstransport.request">GWSTransport.request</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> request(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args, raw:<span class="bu">bool</span><span class="op">=</span><span class="va">False</span>, n_retries:<span class="bu">int</span><span class="op">=</span><span class="dv">5</span>, <span class="co"># Maximum attempts, including the initial request</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    base:<span class="bu">float</span><span class="op">=</span><span class="fl">1.0</span>, <span class="co"># Initial exponential backoff and jitter range, in seconds</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    max_backoff:<span class="bu">float</span><span class="op">=</span><span class="fl">64.0</span>, <span class="co"># Maximum exponential component, in seconds</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    max_wait:<span class="bu">float</span><span class="op">=</span><span class="fl">300.0</span>, <span class="co"># Maximum individual retry wait, in seconds</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    headers:NoneType<span class="op">=</span><span class="va">None</span>, params:NoneType<span class="op">=</span><span class="va">None</span>, json:NoneType<span class="op">=</span><span class="va">None</span>, data:NoneType<span class="op">=</span><span class="va">None</span>, files:NoneType<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    content:NoneType<span class="op">=</span><span class="va">None</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Execute a request and decode JSON/text/binary response.</em></p>
+</section>
+</div>
+<p><a href="https://answerdotai.github.io/fastgws/core.html#gwstransport.request"><code>GWSTransport.request</code></a> performs the selected retry action and preserves the original exception when retries stop. Successful JSON responses become <a href="https://answerdotai.github.io/fastgws/core.html#gwsobject"><code>GWSObject</code></a> values. This request finds Drive in Google’s public API directory without credentials.</p>
+<div id="90253152" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>directory <span class="op">=</span> <span class="cf">await</span> GWSTransport().request(<span class="st">'GET'</span>, <span class="st">'https://discovery.googleapis.com/discovery/v1/apis'</span>)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>drive_entry <span class="op">=</span> first(o <span class="cf">for</span> o <span class="kw">in</span> directory[<span class="st">'items'</span>] <span class="cf">if</span> o.name <span class="op">==</span> <span class="st">'drive'</span> <span class="kw">and</span> o.preferred)</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>test_eq(drive_entry.version, <span class="st">'v3'</span>)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>test_is(<span class="bu">type</span>(drive_entry), GWSObject)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>drive_entry.name, drive_entry.version</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>('drive', 'v3')</code></pre>
+</div>
+</div>
+</section>
+<section id="http-batching" class="level2">
+<h2 class="anchored" data-anchor-id="http-batching">HTTP batching</h2>
+<div id="556742ad" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.756574+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.759995+00:00&quot;,&quot;total&quot;:0.003424139000003379}}" data-execution_count="17">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L176" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="response_from_bytes" class="level3">
+<h3 class="anchored" data-anchor-id="response_from_bytes">response_from_bytes</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> response_from_bytes(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    data, request</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Parse one complete HTTP response for <code>request</code>; raise <code>h11.RemoteProtocolError</code> for invalid framing</em></p>
+</section>
+</div>
+<div id="fb063724" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.760086+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.762724+00:00&quot;,&quot;total&quot;:0.002640893000005917}}" data-execution_count="18">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L170" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="request_bytes" class="level3">
+<h3 class="anchored" data-anchor-id="request_bytes">request_bytes</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> request_bytes(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    request</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Serialize a buffered <code>httpx2.Request</code> as HTTP/1.1</em></p>
+</section>
+</div>
+<p><a href="https://answerdotai.github.io/fastgws/core.html#request_bytes"><code>request_bytes</code></a> writes an HTTP/1.1 message from an <code>httpx2.Request</code>. <a href="https://answerdotai.github.io/fastgws/core.html#response_from_bytes"><code>response_from_bytes</code></a> reads one complete response for that request. HTTP framing is handled by h11. The response retains its headers and decoded body.</p>
+<div id="bb26434c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>request <span class="op">=</span> httpx2.Request(<span class="st">'GET'</span>, <span class="st">'https://api.example/things/one'</span>)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>wire <span class="op">=</span> <span class="st">b'HTTP/1.1 200 OK</span><span class="ch">\r\n</span><span class="st">Content-Type: text/plain</span><span class="ch">\r\n\r\n</span><span class="st">one</span><span class="ch">\r\n</span><span class="st">two'</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> response_from_bytes(wire, request)</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>test_eq(response.content, <span class="st">b'one</span><span class="ch">\r\n</span><span class="st">two'</span>)</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>response.status_code, response.content</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>(200, b'one\r\ntwo')</code></pre>
+</div>
+</div>
+<div id="10fff64b" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.766947+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.770538+00:00&quot;,&quot;total&quot;:0.0035928950000112536}}" data-execution_count="20">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L196" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwsopfunc" class="level3">
+<h3 class="anchored" data-anchor-id="gwsopfunc">GWSOpFunc</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> GWSOpFunc(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    op_spec, client, base_url, form_encoder:NoneType<span class="op">=</span><span class="va">None</span>, defaults:NoneType<span class="op">=</span><span class="va">None</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</div>
+<p>Each batch call supplies the same arguments as an individual <a href="https://answerdotai.github.io/fastgws/core.html#gwsopfunc"><code>GWSOpFunc</code></a> operation. These two calls become separate HTTP requests inside one MIME body.</p>
+<div id="3f358c9b" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>batch_spec <span class="op">=</span> OpSpec(group<span class="op">=</span><span class="st">'things'</span>, name<span class="op">=</span><span class="st">'get'</span>, path<span class="op">=</span><span class="st">'things/</span><span class="sc">{id}</span><span class="st">'</span>, verb<span class="op">=</span><span class="st">'GET'</span>, route_params<span class="op">=</span>[<span class="st">'id'</span>])</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>batch_op <span class="op">=</span> GWSOpFunc(batch_spec, GWSTransport(), <span class="st">'https://api.example/'</span>, noop)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>batch_content,batch_requests <span class="op">=</span> batch_op._batch_content([<span class="bu">dict</span>(<span class="bu">id</span><span class="op">=</span><span class="st">'one'</span>), <span class="bu">dict</span>(<span class="bu">id</span><span class="op">=</span><span class="st">'two'</span>)], <span class="st">'requests'</span>)</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>test_eq([r.url.path <span class="cf">for</span> r <span class="kw">in</span> batch_requests], [<span class="st">'/things/one'</span>, <span class="st">'/things/two'</span>])</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>PrettyString(batch_content.decode())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>--requests
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+MIME-Version: 1.0
+Content-ID: &lt;0&gt;
+
+GET /things/one HTTP/1.1
+Host: api.example
+
+
+--requests
+Content-Type: application/http
+Content-Transfer-Encoding: binary
+MIME-Version: 1.0
+Content-ID: &lt;1&gt;
+
+GET /things/two HTTP/1.1
+Host: api.example
+
+
+--requests--</code></pre>
+</div>
+</div>
+<p>Multipart responses are decoded back into ordered objects or structured <code>APIError</code> values before retry handling.</p>
+<p>A multipart response can contain both a resource and an error. This example uses two <code>GET</code> calls and a response body written in the batch wire format.</p>
+<div id="5c8503e8" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>batch_body <span class="op">=</span> <span class="vs">rb"""--response</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="vs">Content-Type: application/http</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="vs">HTTP/1</span><span class="dv">.</span><span class="vs">1 200 OK</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="vs">Content-Type: application/json</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="vs">{"id":"one"}</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="vs">--response</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="vs">Content-Type: application/http</span></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="vs">HTTP/1</span><span class="dv">.</span><span class="vs">1 403 Forbidden</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="vs">Content-Type: application/json</span></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="vs">{"error":{"message":"Quota exceeded","errors":</span><span class="pp">[{"reason":"userRateLimitExceeded"}]</span><span class="vs">}}</span></span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="vs">--response--</span></span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a><span class="vs">"""</span></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>batch_response <span class="op">=</span> httpx2.Response(<span class="dv">200</span>, headers<span class="op">=</span>{<span class="st">'Content-Type'</span>:<span class="st">'multipart/mixed; boundary=response'</span>}, content<span class="op">=</span>batch_body)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Decoded results retain call order. The successful resource remains available while retry handling considers the rate-limit error.</p>
+<div id="bef470b9" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>batch_results <span class="op">=</span> batch_op._batch_results(batch_response, batch_requests)</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>test_eq(batch_results[<span class="dv">0</span>].<span class="bu">id</span>, <span class="st">'one'</span>)</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>test_eq((batch_results[<span class="dv">1</span>].status_code, batch_results[<span class="dv">1</span>].retryable), (<span class="dv">403</span>, <span class="va">True</span>))</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>batch_results[<span class="dv">0</span>], batch_results[<span class="dv">1</span>].status_code</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>(GWSObject(id='one'), 403)</code></pre>
+</div>
+</div>
+<p>Each batch chunk uses <a href="https://answerdotai.github.io/fastgws/core.html#_retry_action"><code>_retry_action</code></a> to decide which failed parts to retry. Successful results stay in place. A chunk refreshes credentials at most once after a 401 and waits for the longest delay required by its remaining parts. Retry options apply to both the batch HTTP request and its failed parts.</p>
+<div id="cf8947ae" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.778310+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.781730+00:00&quot;,&quot;total&quot;:0.0034221960000024865}}" data-execution_count="25">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L287" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwsopfunc.batch" class="level3">
+<h3 class="anchored" data-anchor-id="gwsopfunc.batch">GWSOpFunc.batch</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> batch(</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    calls, <span class="co"># Dictionaries of operation arguments, in result order</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    chunk:<span class="bu">int</span><span class="op">=</span><span class="dv">50</span>, <span class="co"># Calls per batch request, at most 100</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    return_exceptions:<span class="bu">bool</span><span class="op">=</span><span class="va">False</span>, <span class="co"># Return per-call APIError values instead of raising</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    n_retries:<span class="bu">int</span><span class="op">=</span><span class="dv">5</span>, <span class="co"># Maximum attempts for each batch request and failed part</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    base:<span class="bu">float</span><span class="op">=</span><span class="fl">1.0</span>, <span class="co"># Initial exponential backoff and jitter range, in seconds</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    max_backoff:<span class="bu">float</span><span class="op">=</span><span class="fl">64.0</span>, <span class="co"># Maximum exponential component, in seconds</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    max_wait:<span class="bu">float</span><span class="op">=</span><span class="fl">300.0</span>, <span class="co"># Maximum individual retry wait, in seconds</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Run dictionaries of arguments for this operation through Google’s discovery-advertised HTTP batch endpoint, retrying only the failed parts</em></p>
+</section>
+</div>
+<p><code>batch</code> preserves input order, retries only failed parts, and optionally returns structured per-call errors.</p>
+</section>
+<section id="discovery-clients" class="level2">
+<h2 class="anchored" data-anchor-id="discovery-clients">Discovery clients</h2>
+<p><a href="https://answerdotai.github.io/fastgws/core.html#gwsapi"><code>GWSApi</code></a> builds a dynamic client from a Google discovery document and shares its authenticated transport across generated operations.</p>
+<div id="9e53faa9" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.786016+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.790039+00:00&quot;,&quot;total&quot;:0.004024692999990975}}" data-execution_count="28">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L320" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwsapi" class="level3">
+<h3 class="anchored" data-anchor-id="gwsapi">GWSApi</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> GWSApi(</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>    service:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># Discovery API name, such as 'gmail', 'calendar', 'drive', 'docs', or 'sheets'</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    version:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># API version, defaulting to the service's preferred version</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    token:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># OAuth access token, as an alternative to `creds`</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    creds:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># google-auth credentials, such as from `oauth_creds` or `svc_acct_creds`</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>    api_key:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># API key, defaulting to `GOOGLE_API_KEY` or `GWS_API_KEY` when there are no `creds` or `token`</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    headers:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># Extra request headers</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>    timeout:<span class="bu">float</span><span class="op">=</span><span class="fl">60.0</span>, <span class="co"># Request timeout in seconds</span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>    doc:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># Discovery document to use, instead of fetching it</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Client for one Google API, built from its discovery document, with resources as attribute groups such as <code>gmail.users.messages</code></em></p>
+</section>
+</div>
+<div id="e3ad0824" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.791843+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.795309+00:00&quot;,&quot;total&quot;:0.003467489000001933}}" data-execution_count="30">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L365" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwsapi.from_discovery_url" class="level3">
+<h3 class="anchored" data-anchor-id="gwsapi.from_discovery_url">GWSApi.from_discovery_url</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> from_discovery_url(</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>    url, service:NoneType<span class="op">=</span><span class="va">None</span>, version:NoneType<span class="op">=</span><span class="va">None</span>, token:NoneType<span class="op">=</span><span class="va">None</span>, creds:NoneType<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    api_key:NoneType<span class="op">=</span><span class="va">None</span>, headers:NoneType<span class="op">=</span><span class="va">None</span>, quota_project:NoneType<span class="op">=</span><span class="va">None</span>, timeout:<span class="bu">float</span><span class="op">=</span><span class="fl">60.0</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Create a client from a discovery document fetched from <code>url</code></em></p>
+</section>
+</div>
+<p>Some Google APIs publish a discovery document outside the central index or require authentication just to fetch it. <code>from_discovery_url</code> loads these services directly while reusing the same credentials, API key, quota project, headers, and transport configuration for subsequent operations.</p>
+<div id="8472de32" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>drive_url <span class="op">=</span> <span class="st">'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>drive_from_url <span class="op">=</span> <span class="cf">await</span> GWSApi.from_discovery_url(drive_url)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>test_eq((drive_from_url.service, drive_from_url.version), (<span class="st">'drive'</span>, <span class="st">'v3'</span>))</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>test_eq(drive_from_url.files.<span class="bu">list</span>.verb, <span class="st">'GET'</span>)</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="bu">list</span>(drive_from_url.groups)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>['revisions',
+ 'teamdrives',
+ 'changes',
+ 'replies',
+ 'accessproposals',
+ 'channels',
+ 'drives',
+ 'operations',
+ 'about',
+ 'apps',
+ 'files',
+ 'permissions',
+ 'comments',
+ 'approvals']</code></pre>
+</div>
+</div>
+<p>A method that accepts content (Drive’s <code>files.create</code>, declared with <code>mediaUpload</code> in the discovery doc) yields an upload twin alongside the plain op. fastspec generates it; fastgws inherits it with no code of its own:</p>
+<div id="d2091f2c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>upload <span class="op">=</span> drive_from_url.files.upload</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="st">'media'</span> <span class="kw">in</span> upload.__signature__.parameters</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>upload.media_url</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>'https://www.googleapis.com/resumable/upload/drive/v3/files'</code></pre>
+</div>
+</div>
+<p>The remaining requests need credentials for your account. The Gmail and Drive examples below are disabled during notebook tests. Run the credential setup before running them interactively.</p>
+<div id="0efa9055" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>creds <span class="op">=</span> <span class="cf">await</span> oauth_creds(account<span class="op">=</span><span class="st">'me@example.com'</span>,</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>    scopes<span class="op">=</span>[<span class="st">'https://www.googleapis.com/auth/gmail.readonly'</span>, <span class="st">'https://www.googleapis.com/auth/drive.readonly'</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="060b9242" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>drive <span class="op">=</span> GWSApi(<span class="st">'drive'</span>, creds<span class="op">=</span>creds)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>fs <span class="op">=</span> <span class="cf">await</span> drive.files.<span class="bu">list</span>(q<span class="op">=</span><span class="st">"name contains 'fastgws' and trashed=false"</span>, page_size<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>fs, fs.files[<span class="dv">0</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>({'files': [{'kind': 'drive#file', 'mimeType': 'application/vnd.google-apps.document', 'id': '1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs', 'name': 'fastgws test doc'}, {'kind': 'drive#file', 'mimeType': 'application/vnd.google-apps.document', 'id': '1ohlMW4OttiYNExpTR4SfVdDpGwW7qvyJAYY-YcxaYW0', 'name': 'fastgws test doc'}, {'kind': 'drive#file', 'mimeType': 'application/vnd.google-apps.document', 'id': '1bSoqbh12B5pRF4TEA5RqmWiIB6j2RuK9WNM_Q-6Vers', 'name': 'fastgws test doc'}],
+  'kind': 'drive#fileList',
+  'incompleteSearch': False},
+ {'kind': 'drive#file',
+  'mimeType': 'application/vnd.google-apps.document',
+  'id': '1ObmgD5GOA9zNZbUwCYeFZH8nUc_MKcJHKFqjPJGnkQs',
+  'name': 'fastgws test doc'})</code></pre>
+</div>
+</div>
+<div id="f9799476" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-24T19:12:04.796830+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-24T19:12:04.799401+00:00&quot;,&quot;total&quot;:0.002573776999994948}}" data-execution_count="32">
+<hr>
+<p><a href="https://github.com/answerdotai/fastgws/blob/main/fastgws/core.py#L385" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="gwsopfunc.pages" class="level3">
+<h3 class="anchored" data-anchor-id="gwsopfunc.pages">GWSOpFunc.pages</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> pages(</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args, <span class="op">**</span>kwargs</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Yield every page from a Google list operation, passing each <code>nextPageToken</code> on as <code>page_token</code></em></p>
+</section>
+</div>
+<p>Google list operations expose <code>pages</code>, which forwards each <code>nextPageToken</code> until the response has no next page.</p>
+<div id="593b12e2" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>gmail <span class="op">=</span> GWSApi(<span class="st">'gmail'</span>, creds<span class="op">=</span>creds)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>pages <span class="op">=</span> gmail.users.messages.<span class="bu">list</span>.pages(user_id<span class="op">=</span><span class="st">'me'</span>, max_results<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>page1,page2 <span class="op">=</span> <span class="cf">await</span> <span class="bu">anext</span>(pages),<span class="cf">await</span> <span class="bu">anext</span>(pages)</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>test_ne(page1.messages[<span class="dv">0</span>].<span class="bu">id</span>, page2.messages[<span class="dv">0</span>].<span class="bu">id</span>)</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>page1,page2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>10</code></pre>
+</div>
+</div>
+<p><code>batch</code> can fetch the messages listed on the two pages above in one request. Results follow the order of <code>calls</code>. With <code>return_exceptions=True</code>, a failed call returns an <code>APIError</code> alongside successful messages instead of raising.</p>
+<div id="e884233e" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>calls <span class="op">=</span> [<span class="bu">dict</span>(user_id<span class="op">=</span><span class="st">'me'</span>, <span class="bu">id</span><span class="op">=</span>p.messages[<span class="dv">0</span>].<span class="bu">id</span>, <span class="bu">format</span><span class="op">=</span><span class="st">'metadata'</span>) <span class="cf">for</span> p <span class="kw">in</span> (page1, page2)]</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>messages <span class="op">=</span> <span class="cf">await</span> gmail.users.messages.get.batch(calls, return_exceptions<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>test_eq(<span class="bu">len</span>(messages), <span class="bu">len</span>(calls))</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>messages</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>After a 401, the transport refreshes the credentials once and retries. The fresh token is saved back to the token file. This authenticated example requires the <code>gmail</code> client and credentials from above.</p>
+<div id="ecd11b14" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>creds.token <span class="op">=</span> <span class="st">'not-a-valid-token'</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>msgs <span class="op">=</span> <span class="cf">await</span> gmail.users.messages.<span class="bu">list</span>(user_id<span class="op">=</span><span class="st">'me'</span>, max_results<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>test_eq(json.loads(Path(creds.token_path).read_text())[<span class="st">'token'</span>], creds.token)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/answerdotai\.github\.io\/fastgws");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/answerdotai/fastgws/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
