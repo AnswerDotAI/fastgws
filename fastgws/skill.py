@@ -2,7 +2,7 @@
 
 # Credentials
 
-`oauth_creds` (gclientid's, re-exported) loads the token `gclientid-auth` stored for an account: authorise or widen a grant in the shell with `gclientid-auth me@example.com --preset google-apps`, then `creds = await oauth_creds(account='me@example.com')`.
+In a SolveIt instance, connect Gmail on the dashboard and use `creds = await oauth_creds(scopes=[...])`. For a named account, authorize it with `gclientid-auth me@example.com --preset google-apps` and load its stored token with `creds = await oauth_creds(account='me@example.com')`.
 
 `scopes=` checks the token covers the task. If the token is missing, lacks those scopes, or can't refresh, gclientid follows its stored `reauth` setting: on (default where gclientid provisioned the client) runs `gclientid-auth` in the configured browser and waits for the user; off raises an error naming `gclientid-auth` for the user to run. `reauth=` overrides; see "Automatic re-authorization" in the gclientid README. Expired access tokens need no reload: fastgws refreshes during calls (including after a 401) and saves back to the token file. `logout` revokes a grant and deletes its token.
 
