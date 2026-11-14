@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,15 +8,15 @@ dynamic = ["version"]
 description = ""
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 authors = [{name = "Nathan", email = "nc@answer.ai"}]
 keywords = ['nbdev']
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
 ]
-dependencies = ['fastcore', 'fastspec', 'google-api-python-client>=2.120.0', 'google-auth>=2.30.0',
-                'google-auth-oauthlib>=1.2.0', 'google-auth-httplib2>=0.2.0', 'httpx2']
+dependencies = ['fastcore>=2.1.16', 'fastspec>=0.2.5', 'fasttransport>=0.0.2', 'google-auth>=2.30.0',
+                'google-auth-oauthlib>=1.2.0', 'gclientid>=0.1.5', 'httpx2', 'pyskills']
 
 [project.urls]
 Repository = "https://github.com/answerdotai/fastgws"
@@ -37,3 +37,6 @@ allowed_cell_metadata_keys = ['solveit_ai']
 
 [project.entry-points.pyskills]
 "fastgws.skill" = "fastgws.skill"
+
+[tool.chkstyle]
+skip_paths = ["_modidx.py", "_proc"]

@@ -1,109 +1,40 @@
-"""Use fastgws to read and work with Google Workspace and Google APIs from Python. This skill exposes the base `GWSApi` client, OAuth credential loading, and generated Google API operations. Use it when the task needs access to Gmail, Calendar, Drive, Docs, Sheets, Places, or another Google API published through Google's discovery documents.
+"""Use fastgws to read and work with Google Workspace and Google APIs from Python. This skill exposes the base `GWSApi` client, OAuth credential loading, and generated Google API operations, and Workspace user administration. Use it when the task needs access to Gmail, Calendar, Drive, Docs, Sheets, Places, or another Google API published through Google's discovery documents.
 
-# Authentication
+# Credentials
 
-Use `oauth_creds` to load Google OAuth credentials for the scopes needed by the task. Agents should normally call it with `interactive=False`, which means only previously authorized tokens can be used. If a new scope is needed, the user should run the interactive OAuth step manually in a code cell, then the agent can load the saved token afterward.
+In a SolveIt instance, connect Gmail on the dashboard and use `creds = await oauth_creds(scopes=[...])`. For a named account, authorize it with `gclientid-auth me@example.com --preset google-apps` and load its stored token with `creds = await oauth_creds(account='me@example.com')`.
 
-If `interactive=False` fails with a missing or invalid token error, explain that the requested scope has not been authorized yet. Ask the user to run the same call manually without `interactive=False`, for example:
+`scopes=` checks the token covers the task. If the token is missing, lacks those scopes, or can't refresh, gclientid follows its stored `reauth` setting: on (default where gclientid provisioned the client) runs `gclientid-auth` in the configured browser and waits for the user; off raises an error naming `gclientid-auth` for the user to run. `reauth=` overrides; see "Automatic re-authorization" in the gclientid README. Expired access tokens need no reload: fastgws refreshes during calls (including after a 401) and saves back to the token file. `logout` revokes a grant and deletes its token.
 
-```python
-creds = oauth_creds(scopes=['https://www.googleapis.com/auth/gmail.readonly'],
-                    redirect_uri='https://oauth.appapis.org/redirect')
-```
+`svc_acct_creds`: when the user supplies a service account JSON and the API needs no browser consent. For user-owned Workspace data a service account usually needs domain-wide delegation plus `subject=`; otherwise OAuth is the safer default.
 
-After the user completes the OAuth flow, load the credentials with `interactive=False` before making API calls.
+# Clients and calls
 
-Access tokens refresh automatically during API calls (including after a 401), and the fresh token is saved back to the token file, so there is no need to re-run `oauth_creds` when a token expires.
+`GWSApi('gmail', creds=creds)` builds a client from the service's discovery document, fetched on creation. Resources are attribute groups (`await gmail.users.messages.list(...)`); `doc()` a resource group for its operations, then an operation for its params (the top-level client shows less). Operations are awaitable and take Python-style names (`userId`→`user_id`); check `doc()` rather than guessing. Responses are `GWSObject`s: fields as attributes or keys, nested dicts as nested objects.
 
-To sign out, `await logout()` revokes the saved grant at Google and deletes the stored token (a no-op if none is saved).
+Requests ask for gzip; Google's `fields=` trims responses. Transient failures (rate-limit 403s, 429s, 5xx, network errors) are retried. `op.pages()` iterates a list operation's pages. Where the service advertises HTTP batching, `op.batch([...])` runs many calls of one operation, one dict of args each, results in order:
 
-Service accounts are available through `svc_acct_creds` for Google APIs that support them. Use them when the user has provided a local service account JSON file and the target API can be accessed without a browser-based user consent flow. For Workspace data owned by a user, service accounts usually need domain-wide delegation and a `subject` user; otherwise OAuth credentials are the safer default.
+    msgs = await gmail.users.messages.get.batch([
+        dict(user_id='me', id=mid, format='minimal', fields='id,labelIds') for mid in ids])
 
-```python
-creds = svc_acct_creds(scopes=['https://www.googleapis.com/auth/drive.readonly'],
-                       subject='user@example.com')
-```
+Drive methods taking content have upload twins: `drive.files.upload` for `files.create`, `<name>_media` for the rest (e.g. `drive.files.update_media`). They use Google's resumable protocol but send the whole content from memory in one request, so memory caps upload size.
 
-# Creating clients
+Google conventions: Gmail `user_id='me'` = signed-in mailbox, `q=` = Gmail search syntax; Drive `q=` = Drive query syntax, add `trashed=false` unless the task is about deleted files; Calendar `calendar_id='primary'` = main calendar, and time-window reads want `single_events=True, order_by='startTime'`.
 
-Create a Google API client with `GWSApi(service, creds=creds)`, where `service` is the discovery API name such as `'gmail'`, `'calendar'`, `'drive'`, `'docs'`, or `'sheets'`. Operations are grouped as attributes, so a Gmail messages call looks like `gmail.users.messages.list(...)`, and a Drive files call looks like `drive.files.list(...)`.
+# Workspace administration
 
-```python
-gmail = GWSApi('gmail', creds=creds)
-```
-
-# Calling operations
-
-Generated operations are awaitable methods. Pass parameters using the Python names shown by `doc(...)` or the method signature; fastgws maps them back to the Google API parameter names. Responses are returned as lightweight objects, so fields can be read with attributes or dictionary keys.
-
-```python
-msgs = await gmail.users.messages.list(user_id='me', max_results=10)
-```
-
-# Finding available methods
-
-Use `doc(...)` on generated groups to see their operations, then use it on a specific operation to see its parameters. Top-level clients are less useful to inspect than their resource groups.
-
-```python
-doc(gmail.users.messages)
-doc(gmail.users.messages.list)
-```
-
-If `doc` has been shadowed by another variable, use `pyskills.core.doc(...)` instead.
-
-# Response objects
-
-fastgws converts JSON responses into lightweight Python objects. Fields can usually be read as attributes or dictionary keys. Lists remain iterable, and nested dictionaries become nested objects.
-
-```python
-msgs = await gmail.users.messages.list(user_id='me', max_results=10)
-msgs.messages[0].id
-```
+`WorkspaceAdmin(creds)` manages the user lifecycle via separate methods: `create_user`, `assign_license`/`remove_license`, `suspend_user` (`suspended=False` restores), `delete_user`. Check the domain's existing product and SKU before assigning a licence. These are writes, so the skill doesn't allow them in sandboxed hosts.
 
 # Read before write
 
-Prefer read-only scopes and read-only operations unless the user explicitly asks for a change. Some generated methods can send mail, delete files, modify calendar events, or change document contents. For destructive actions, inspect the operation docs first, state what will happen, and wait for explicit confirmation before calling it.
-
-# Gmail notes
-
-Use `user_id='me'` for the authenticated mailbox. Gmail search uses the same query syntax as the Gmail search box, so `q='from:someone@example.com newer_than:7d'` works with `users.messages.list`.
-
-```python
-msgs = await gmail.users.messages.list(user_id='me', q='is:unread', max_results=10)
-```
-
-# Drive notes
-
-Use Drive search queries with `drive.files.list(q=...)`. Ask only for the fields needed when working with many files, and include `trashed=false` unless the task is specifically about deleted files.
-
-```python
-files = await drive.files.list(q="name contains 'report' and trashed=false", page_size=10)
-```
-
-# Calendar notes
-
-Use `calendar_id='primary'` for the authenticated user's main calendar. For event lists, prefer `single_events=True` and `order_by='startTime'` when reading a time window.
-
-```python
-events = await calendar.events.list(calendar_id='primary', single_events=True, order_by='startTime')
-```
-
-# Gotchas
-
-`oauth_creds(..., interactive=True)` may display an authorization link but fail to collect the pasted code inside agent tool calls. Use `interactive=False` from the agent. If new scopes are needed, ask the user to run the interactive OAuth call manually in a code cell.
-
-Google APIs use many different parameter names. Inspect the specific operation with `doc(...)` before guessing. fastgws converts names to Python style, so `userId` becomes `user_id`, `maxResults` becomes `max_results`, and so on.
-
-Some list responses are paginated. If the response includes `nextPageToken`, pass it back as `page_token` to fetch the next page.
-
-Generated clients expose whatever the Google discovery document exposes. The presence of a method does not mean the saved credentials have the required scope.
+Prefer read-only scopes and operations unless the user asks for a change. Generated methods can send mail, delete files, modify events, and change documents. Before anything destructive: read the operation's docs, state the effect, wait for explicit confirmation. A client exposes every method in the discovery document, whether or not the credentials have its scope.
 """
 
 from pyskills.core import allow
 from fastgws.auth import oauth_creds, logout, svc_acct_creds
 from fastgws.core import GWSApi, GWSObject, GWSOpFunc
+from fastgws.admin import WorkspaceAdmin
 
-__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'logout', 'svc_acct_creds']
+__all__ = ['GWSApi', 'GWSObject', 'oauth_creds', 'logout', 'svc_acct_creds', 'WorkspaceAdmin']
 
-allow(GWSApi.__init__, oauth_creds, svc_acct_creds, {GWSOpFunc: ['__call__']})
-
+allow(GWSApi.__init__, svc_acct_creds, {GWSOpFunc: ['__call__', 'batch', 'pages']})
